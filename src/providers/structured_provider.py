@@ -297,6 +297,33 @@ class StructuredOCRProvider(BaseOCRProvider):
                         json_content = json_content.strip()
                         
                         assessment_data = json.loads(json_content)
+                        
+                        # Handle nested responses (some models wrap the response)
+                        if len(assessment_data) == 1 and any(key.lower() in ['quality_assessment', 'assessment', 'qualityassessment'] for key in assessment_data.keys()):
+                            assessment_data = list(assessment_data.values())[0]
+                        
+                        # Normalize field names - different models use different conventions
+                        field_mappings = {
+                            'completeness': 'completeness_score',
+                            'accuracy': 'accuracy_score', 
+                            'structure': 'structure_score',
+                            'confidence': 'confidence_level'
+                        }
+                        
+                        for old_key, new_key in field_mappings.items():
+                            if old_key in assessment_data and new_key not in assessment_data:
+                                assessment_data[new_key] = assessment_data[old_key]
+                                del assessment_data[old_key]
+                        
+                        # Normalize recommendations field - convert string to list if needed
+                        if 'recommendations' in assessment_data and isinstance(assessment_data['recommendations'], str):
+                            assessment_data['recommendations'] = [assessment_data['recommendations']]
+                        
+                        # Ensure all required fields exist with defaults
+                        assessment_data.setdefault('missing_elements', [])
+                        assessment_data.setdefault('potential_errors', [])
+                        assessment_data.setdefault('recommendations', [])
+                        
                         assessment = QualityAssessment(**assessment_data)
                         return {
                             "success": True,

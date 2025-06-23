@@ -97,10 +97,10 @@ ORIGINAL IMAGE CONTEXT: {image_description}
 
 EXTRACTED JSON: {extracted_json}
 
-Assess the extraction quality across these dimensions:
-1. COMPLETENESS: Did we capture all visible data elements?
-2. ACCURACY: Are the numeric values and labels correct?
-3. STRUCTURE: Is the data properly organized and categorized?
+Assess the extraction quality across these dimensions ON A SCALE OF 0-10 (where 10 is perfect):
+1. COMPLETENESS: Did we capture all visible data elements? (Score: 0-10)
+2. ACCURACY: Are the numeric values and labels correct? (Score: 0-10)
+3. STRUCTURE: Is the data properly organized and categorized? (Score: 0-10)
 
 Look for:
 - Missing charts or metrics that should be there
@@ -109,5 +109,10 @@ Look for:
 - Poor data organization
 - Watermarks incorrectly extracted as data
 
-Provide specific, actionable feedback for improvement.
+IMPORTANT: 
+- All scores must be numbers between 0 and 10 (inclusive)
+- Use decimal points for precision (e.g., 8.5, 9.2)
+- Confidence level must be one of: "high", "medium", "low"
+
+Provide specific, actionable feedback for improvement in the recommendations array.
 """

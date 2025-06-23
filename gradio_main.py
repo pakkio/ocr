@@ -291,6 +291,8 @@ class StandaloneStructuredOCR:
         prompt = (
             "You are a data quality analyst. Evaluate the provided JSON data from a dashboard. "
             "Your output MUST be a single, valid JSON object with keys: 'completeness_score', 'accuracy_score', 'structure_score', 'confidence_level', 'recommendations'.\n\n"
+            "IMPORTANT: All scores must be numbers between 0 and 10 (inclusive). Use decimal points for precision (e.g., 8.5, 9.2).\n"
+            "Confidence level must be one of: 'high', 'medium', 'low'.\n\n"
             f"EXTRACTED JSON:\n```json\n{json.dumps(extracted_data, indent=2)}\n```"
         )
         payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "response_format": {"type": "json_object"}}
