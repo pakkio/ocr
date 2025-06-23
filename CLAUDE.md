@@ -24,7 +24,7 @@
 - ✅ `ocr_tester.py` - App base per OCR tradizionali
 - ✅ `advanced_ocr_app.py` - Benchmark completo ibrido
 - ✅ `structured_benchmark.py` - **Main application** per JSON extraction con judge system
-- ✅ `gradio_main.py` - **Modern Gradio interface** con judge comparison tab
+- ✅ `gradio_main.py` - **Modern Gradio interface** con manual + auto tournament tabs
 - ✅ `comprehensive_test_suite.py` - **Automated testing** di tutti i modelli
 - ✅ `src/judge_llm.py` - **Judge LLM System** per automated model comparison
 
@@ -117,6 +117,7 @@ class JudgmentResult(BaseModel):
 - **🆕 Judge LLM System**: Head-to-head model comparison with tournament-style rankings
 - **🆕 Pairwise comparisons**: Automated evaluation of OCR results across all model pairs
 - **🆕 Confidence scoring**: Statistical confidence in judgment decisions
+- **🆕 Manual Tournament Control**: Cost-effective round-by-round model selection
 
 ### 4. Visualization & Export
 - **Interactive charts** con Plotly per visualizzare extracted data
@@ -210,6 +211,11 @@ Same Image → Multiple VLMs → Parallel Extraction → Quality Scores → Rank
 Model Results → Pairwise Comparisons → Judge LLM → Win/Loss Matrix → Final Rankings
 ```
 
+### 5. Manual Tournament Control (Cost-Optimized)
+```
+User Selection → Single Matchup → Judge Evaluation → Tournament History → Strategic Planning
+```
+
 ## 💡 Learnings & Insights
 
 ### VLM Performance Observations
@@ -237,6 +243,12 @@ Model Results → Pairwise Comparisons → Judge LLM → Win/Loss Matrix → Fin
 - **Easy model switching** per A/B testing
 - **Cost optimization** con model selection
 
+### Why Manual Tournament Control?
+- **Cost Management**: Expensive models ($0.005/1k) vs cheap ones ($0.000075/1k)
+- **Strategic Testing**: Start with budget models, escalate to premium for finals
+- **Budget Control**: Prevent accidental $50+ bills from auto-tournaments
+- **Focused Evaluation**: Test specific matchups without combinatorial explosion
+
 ### Why Pydantic?
 - **Runtime validation** per data integrity
 - **Auto-generated schemas** per OpenRouter JSON mode
@@ -252,7 +264,20 @@ Model Results → Pairwise Comparisons → Judge LLM → Win/Loss Matrix → Fin
 
 ## 🆕 Recent Technical Improvements
 
-### 1. Enhanced Model Compatibility
+### 1. Manual Tournament Interface (🔥 NEW)
+- **Cost-Aware Design**: Separate expensive from budget models
+- **Fighter Selection**: Dropdown interface for precise model matchups
+- **Round Tracking**: Numbered rounds with complete tournament history
+- **Strategic Control**: Start cheap (Gemini Flash $0.000075) → escalate to premium (GPT-4o $0.005)
+- **Budget Protection**: Prevent accidental high-cost auto-tournaments
+
+```python
+# Manual tournament saves 70-80% on API costs
+# Auto Tournament: 5 models × 10 comparisons = $0.05+
+# Manual Tournament: Strategic 3 rounds = $0.008
+```
+
+### 2. Enhanced Model Compatibility
 - **Correct model names** per OpenRouter API (`anthropic/claude-3.5-sonnet`)
 - **Schema compatibility flags** (`supports_strict_json_schema`)
 - **Automatic fallback mechanisms** da strict a json_object mode
@@ -362,3 +387,4 @@ python run_tests.py --mode quick
 - ✅ **Enhanced testing** - Comprehensive automated test suite
 - ✅ **Production ready** - Poetry 2.0, proper documentation, CI/CD ready
 - ✅ **Judge LLM System** - Advanced head-to-head model comparison with automated scoring
+- ✅ **Manual Tournament Control** - Cost-effective round-by-round model battles

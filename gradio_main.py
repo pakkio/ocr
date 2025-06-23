@@ -348,7 +348,182 @@ def create_app():
         gr.Markdown("Upload an image or select one of the examples from the `data` directory using the upload button.")
         
         with gr.Tabs():
-            with gr.Tab("🏆 Judge Comparison"):
+            with gr.Tab("🥊 Manual Tournament"):
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        manual_image = gr.Image(type="pil", label="🖼️ Upload Dashboard")
+                        
+                        with gr.Group():
+                            gr.Markdown("### 🎯 Select Your Fighters")
+                            fighter_a = gr.Dropdown(
+                                choices=["gpt-4o", "anthropic/claude-3.5-sonnet", "google/gemini-2.5-flash", "google/gemini-pro-1.5", "openai/gpt-4o-mini"],
+                                value="gpt-4o",
+                                label="🥊 Fighter A"
+                            )
+                            fighter_b = gr.Dropdown(
+                                choices=["gpt-4o", "anthropic/claude-3.5-sonnet", "google/gemini-2.5-flash", "google/gemini-pro-1.5", "openai/gpt-4o-mini"],
+                                value="anthropic/claude-3.5-sonnet",
+                                label="🥊 Fighter B"
+                            )
+                            fight_btn = gr.Button("⚔️ FIGHT!", variant="primary", size="lg")
+                        
+                        with gr.Group():
+                            gr.Markdown("### 🏆 Tournament Tracker")
+                            tournament_status = gr.Markdown("**Rounds Completed:** 0")
+                            reset_tournament_btn = gr.Button("🔄 Reset Tournament", variant="secondary")
+                    
+                    with gr.Column(scale=2):
+                        fight_result = gr.Markdown(label="⚔️ Fight Result")
+                        winner_announcement = gr.Markdown(label="🏆 Winner")
+                        round_analysis = gr.Markdown(label="📊 Round Analysis")
+                
+                with gr.Accordion("🔍 Fight Details", open=False):
+                    fighter_a_result = gr.Code(label="Fighter A OCR Result", language="json", lines=10)
+                    fighter_b_result = gr.Code(label="Fighter B OCR Result", language="json", lines=10)
+                    judge_decision = gr.Code(label="Judge Decision Details", language="json", lines=8)
+
+                # Tournament state (stored in gradio state)
+                tournament_history = gr.State([])
+                round_counter = gr.State(0)
+
+                async def manual_fight(image, model_a, model_b, history, round_num):
+                    if image is None:
+                        return "❌ Please upload an image first!", "", "", "{}", "{}", "{}", history, round_num, "**Rounds Completed:** 0"
+                    
+                    if model_a == model_b:
+                        return "❌ Please select different models!", "", "", "{}", "{}", "{}", history, round_num, f"**Rounds Completed:** {round_num}"
+                    
+                    # Extract OCR results
+                    result_a = await structured_handler.extract(image, model_a)
+                    result_b = await structured_handler.extract(image, model_b)
+                    
+                    if not result_a.get("success") or not result_b.get("success"):
+                        error_msg = f"❌ OCR extraction failed!\n- {model_a}: {'✅' if result_a.get('success') else '❌'}\n- {model_b}: {'✅' if result_b.get('success') else '❌'}"
+                        return error_msg, "", "", json.dumps(result_a, indent=2), json.dumps(result_b, indent=2), "{}", history, round_num, f"**Rounds Completed:** {round_num}"
+                    
+                    # Initialize judge and run comparison
+                    judge = StandaloneJudgeLLM()
+                    judgment = await judge.judge_comparison(
+                        result_a["data"], result_b["data"], model_a, model_b
+                    )
+                    
+                    if not judgment.get("success"):
+                        error_msg = f"❌ Judge comparison failed: {judgment.get('error', 'Unknown error')}"
+                        return error_msg, "", "", json.dumps(result_a, indent=2), json.dumps(result_b, indent=2), "{}", history, round_num, f"**Rounds Completed:** {round_num}"
+                    
+                    # Process judgment results
+                    judgment_data = judgment["judgment"]
+                    winner = judgment_data.get("winner")
+                    confidence = judgment_data.get("confidence", 0.0)
+                    reasoning = judgment_data.get("reasoning", "No reasoning provided")
+                    
+                    # Determine winner name
+                    if winner == "result_a":
+                        winner_name = model_a
+                        winner_emoji = "🥇"
+                        loser_name = model_b
+                    elif winner == "result_b":
+                        winner_name = model_b
+                        winner_emoji = "🥇"
+                        loser_name = model_a
+                    else:
+                        winner_name = "TIE"
+                        winner_emoji = "🤝"
+                        loser_name = "Both fighters"
+                    
+                    # Update round counter and history
+                    new_round_num = round_num + 1
+                    fight_record = {
+                        "round": new_round_num,
+                        "fighter_a": model_a,
+                        "fighter_b": model_b,
+                        "winner": winner_name,
+                        "confidence": confidence,
+                        "reasoning": reasoning
+                    }
+                    new_history = history + [fight_record]
+                    
+                    # Create fight result display
+                    fight_display = f"""
+## ⚔️ ROUND {new_round_num} RESULTS
+
+**Fighters:**
+- 🥊 **{model_a}** vs **{model_b}** 🥊
+
+**Judge Confidence:** {confidence:.1%}
+"""
+                    
+                    # Winner announcement
+                    if winner_name == "TIE":
+                        winner_display = f"""
+# 🤝 IT'S A TIE!
+
+Both fighters performed equally well in this round.
+"""
+                    else:
+                        winner_display = f"""
+# {winner_emoji} WINNER: {winner_name.upper()}!
+
+**Defeated:** {loser_name}
+**Confidence:** {confidence:.1%}
+"""
+                    
+                    # Round analysis
+                    analysis_display = f"""
+## 📊 Judge Analysis
+
+**Reasoning:**
+{reasoning}
+
+---
+
+## 🏆 Tournament History
+"""
+                    
+                    # Add tournament history
+                    for i, fight in enumerate(new_history, 1):
+                        fight_winner = fight["winner"]
+                        fight_conf = fight["confidence"]
+                        analysis_display += f"\n**Round {i}:** {fight['fighter_a']} vs {fight['fighter_b']} → **{fight_winner}** ({fight_conf:.1%})"
+                    
+                    # Create human-readable report
+                    detailed_report = judge.create_human_readable_report(judgment_data, model_a, model_b)
+                    
+                    tournament_status_display = f"**Rounds Completed:** {new_round_num}"
+                    
+                    return (
+                        fight_display,
+                        winner_display, 
+                        analysis_display,
+                        json.dumps(result_a, indent=2, default=str),
+                        json.dumps(result_b, indent=2, default=str),
+                        json.dumps(judgment_data, indent=2, default=str),
+                        new_history,
+                        new_round_num,
+                        tournament_status_display
+                    )
+
+                def reset_tournament():
+                    return [], 0, "**Rounds Completed:** 0", "", "", "", "{}", "{}", "{}"
+
+                # Connect the manual fight button
+                fight_btn.click(
+                    fn=manual_fight,
+                    inputs=[manual_image, fighter_a, fighter_b, tournament_history, round_counter],
+                    outputs=[fight_result, winner_announcement, round_analysis, 
+                            fighter_a_result, fighter_b_result, judge_decision,
+                            tournament_history, round_counter, tournament_status]
+                )
+                
+                # Connect reset button
+                reset_tournament_btn.click(
+                    fn=reset_tournament,
+                    outputs=[tournament_history, round_counter, tournament_status,
+                            fight_result, winner_announcement, round_analysis,
+                            fighter_a_result, fighter_b_result, judge_decision]
+                )
+
+            with gr.Tab("🏆 Auto Tournament"):
                 with gr.Row():
                     with gr.Column(scale=1):
                         judge_image = gr.Image(type="pil", label="🖼️ Upload Dashboard")
