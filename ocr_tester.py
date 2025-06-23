@@ -1,4 +1,4 @@
-import streamlit as st
+# OCR Tester - Standalone Class (converted from Streamlit)
 import easyocr
 import cv2
 import numpy as np
@@ -13,29 +13,29 @@ try:
     PADDLE_AVAILABLE = True
 except ImportError:
     PADDLE_AVAILABLE = False
-    st.warning("PaddleOCR non disponibile - installa con: poetry add paddleocr")
+    print("Warning: PaddleOCR not available - install with: poetry add paddleocr")
 
 try:
     import pytesseract
     TESSERACT_AVAILABLE = True
 except ImportError:
     TESSERACT_AVAILABLE = False
-    st.warning("Tesseract non disponibile - installa con: poetry add pytesseract")
+    print("Warning: Tesseract not available - install with: poetry add pytesseract")
 
 class OCRTester:
     def __init__(self):
         self.easyocr_reader = None
         self.paddle_ocr = None
         
-    @st.cache_resource
-    def get_easyocr_reader(_self, languages=['en', 'it']):
-        return easyocr.Reader(languages)
+    def get_easyocr_reader(self, languages=['en', 'it']):
+        if self.easyocr_reader is None:
+            self.easyocr_reader = easyocr.Reader(languages)
+        return self.easyocr_reader
     
-    @st.cache_resource 
-    def get_paddle_ocr(_self):
-        if PADDLE_AVAILABLE:
-            return PaddleOCR(use_angle_cls=True, lang='en')
-        return None
+    def get_paddle_ocr(self, lang='en'):
+        if self.paddle_ocr is None and PADDLE_AVAILABLE:
+            self.paddle_ocr = PaddleOCR(use_angle_cls=True, lang=lang)
+        return self.paddle_ocr
     
     def preprocess_image(self, image):
         """Converte immagine PIL in formato OpenCV"""

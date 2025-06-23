@@ -1,4 +1,4 @@
-import streamlit as st
+# Structured Benchmark - Standalone Class (converted from Streamlit)
 import asyncio
 import pandas as pd
 import json
@@ -25,14 +25,14 @@ class StructuredBenchmarkApp:
         """Initialize structured provider with error handling"""
         try:
             if not self.config.openrouter_api_key:
-                st.error("⚠️ OpenRouter API key not configured!")
-                st.info("Create `.env` file with: `OPENROUTER_API_KEY=your_key_here`")
+                print("⚠️ OpenRouter API key not configured!")
+                print("Create `.env` file with: `OPENROUTER_API_KEY=your_key_here`")
                 return False
             
             self.provider = StructuredOCRProvider(self.config)
             return True
         except Exception as e:
-            st.error(f"❌ Provider initialization failed: {str(e)}")
+            print(f"❌ Provider initialization failed: {str(e)}")
             return False
     
     def display_dashboard_data(self, data: Dict[str, Any], title: str = "Extracted Data"):
