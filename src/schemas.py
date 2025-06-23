@@ -68,10 +68,10 @@ class QualityAssessment(BaseModel):
     completeness_score: float = Field(ge=0, le=10, description="How complete is the extraction (0-10)")
     accuracy_score: float = Field(ge=0, le=10, description="How accurate are the extracted values (0-10)")
     structure_score: float = Field(ge=0, le=10, description="How well structured is the data (0-10)")
-    missing_elements: List[str] = Field(default_factory=list, description="Elements that appear missing")
-    potential_errors: List[str] = Field(default_factory=list, description="Potential extraction errors")
+    missing_elements: List[str] = Field(description="Elements that appear missing")
+    potential_errors: List[str] = Field(description="Potential extraction errors")
     confidence_level: str = Field(description="Overall confidence: high, medium, low")
-    recommendations: List[str] = Field(default_factory=list, description="Recommendations for improvement")
+    recommendations: List[str] = Field(description="Recommendations for improvement")
     
 
 # Prompt templates for structured extraction

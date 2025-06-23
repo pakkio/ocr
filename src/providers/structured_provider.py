@@ -233,13 +233,16 @@ class StructuredOCRProvider(BaseOCRProvider):
                                     }
                                 
                                 # Normalize data before validation
-                                structured_data = self._normalize_dashboard_data(structured_data)
+                                normalized_data = self._normalize_dashboard_data(structured_data)
                                 
                                 # Validate against Pydantic model
-                                dashboard_data = DashboardData(**structured_data)
+                                dashboard_data = DashboardData(**normalized_data)
+                                
+                                # Return both the validated model and the normalized raw data
                                 return {
                                     "success": True,
                                     "data": dashboard_data.model_dump(),
+                                    "normalized_data": normalized_data,  # Raw data for quality assessment
                                     "raw_content": content,
                                     "usage": data.get('usage', {}),
                                     "model": model
@@ -293,13 +296,52 @@ class StructuredOCRProvider(BaseOCRProvider):
         
         # Serialize data properly, handling enums and other non-JSON types
         def json_serializer(obj):
-            if hasattr(obj, 'value'):  # Handle enums
+            # Handle enums (like ChartType.LINE)
+            if hasattr(obj, 'value') and hasattr(obj, 'name'):
+                print(f"DEBUG QUALITY - Serializing enum: {obj} -> {obj.value}")
                 return obj.value
-            return str(obj)
+            elif hasattr(obj, 'model_dump'):  # Handle Pydantic models
+                return obj.model_dump(mode='json')
+            else:
+                print(f"DEBUG QUALITY - Serializing unknown object: {type(obj)} -> {str(obj)}")
+                return str(obj)
+        
+        # Debug: Check what type of data we're dealing with
+        print(f"DEBUG QUALITY - Data type: {type(extracted_data)}")
+        print(f"DEBUG QUALITY - Has model_dump: {hasattr(extracted_data, 'model_dump')}")
+        print(f"DEBUG QUALITY - Sample data: {str(extracted_data)[:200]}...")
+        
+        # Pre-process data to convert enums to strings
+        def convert_enums_to_strings(obj):
+            if isinstance(obj, dict):
+                return {k: convert_enums_to_strings(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_enums_to_strings(item) for item in obj]
+            elif hasattr(obj, 'value') and hasattr(obj, 'name'):  # Enum
+                print(f"DEBUG QUALITY - Converting enum: {obj} -> {obj.value}")
+                return obj.value
+            else:
+                return obj
+        
+        # Convert enums to strings first
+        clean_data = convert_enums_to_strings(extracted_data)
+        print(f"DEBUG QUALITY - After enum conversion: {str(clean_data)[:200]}...")
+        
+        # If the data comes from a Pydantic model, use model_dump(mode='json')
+        if hasattr(extracted_data, 'model_dump'):
+            serialized_json = json.dumps(extracted_data.model_dump(mode='json'), indent=2)
+            print("DEBUG QUALITY - Using model_dump(mode='json')")
+        else:
+            try:
+                serialized_json = json.dumps(clean_data, indent=2)
+                print("DEBUG QUALITY - Using json.dumps on clean data")
+            except Exception as e:
+                print(f"DEBUG QUALITY - JSON serialization error: {e}")
+                raise e
         
         prompt = QUALITY_ASSESSMENT_PROMPT.format(
             image_description=image_description,
-            extracted_json=json.dumps(extracted_data, indent=2, default=json_serializer)
+            extracted_json=serialized_json
         )
         
         try:
@@ -352,12 +394,24 @@ class StructuredOCRProvider(BaseOCRProvider):
             
             payload = base_payload
             
+            print(f"DEBUG QUALITY - API payload model: {payload.get('model')}")
+            print(f"DEBUG QUALITY - API payload size: {len(str(payload))} chars")
+            print(f"DEBUG QUALITY - Response format: {payload.get('response_format', {}).get('type')}")
+            
             async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
                 response = await client.post(
                     f"{self.base_url}/chat/completions",
                     headers=self.headers,
                     json=payload
                 )
+                
+                print(f"DEBUG QUALITY - API response status: {response.status_code}")
+                if response.status_code != 200:
+                    try:
+                        error_data = response.json()
+                        print(f"DEBUG QUALITY - API error response: {error_data}")
+                    except:
+                        print(f"DEBUG QUALITY - API error text: {response.text}")
                 
                 if response.status_code == 200:
                     data = response.json()
