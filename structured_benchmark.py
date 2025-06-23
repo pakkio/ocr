@@ -25,6 +25,7 @@ from datetime import datetime
 try:
     from src.providers.structured_provider import StructuredOCRProvider
     from src.config import config
+    from src.judge_llm import JudgeLLM, judge_ocr_results
     STRUCTURED_PROVIDER_AVAILABLE = True
 except ImportError:
     STRUCTURED_PROVIDER_AVAILABLE = False
@@ -34,8 +35,9 @@ class StructuredBenchmark:
     """Standalone class for VLM structured extraction benchmarking"""
     
     def __init__(self):
-        """Initialize structured provider with error handling"""
+        """Initialize structured provider and judge LLM with error handling"""
         self.provider = None
+        self.judge = None
         if STRUCTURED_PROVIDER_AVAILABLE:
             try:
                 if not config.openrouter_api_key:
@@ -43,6 +45,7 @@ class StructuredBenchmark:
                     print("Please set OPENROUTER_API_KEY in your .env file")
                 else:
                     self.provider = StructuredOCRProvider(config)
+                    self.judge = JudgeLLM()
             except Exception as e:
                 print(f"❌ Failed to initialize structured provider: {str(e)}")
 
@@ -245,6 +248,211 @@ class StructuredBenchmark:
                 }
         
         return analysis
+
+    async def run_judge_comparison(self, result_a: Dict[str, Any], result_b: Dict[str, Any], 
+                                 image_path: str, model_a_name: str, model_b_name: str) -> Dict[str, Any]:
+        """
+        Compare two OCR results using the judge LLM
+        
+        Args:
+            result_a: First OCR extraction result
+            result_b: Second OCR extraction result  
+            image_path: Path to source image
+            model_a_name: Name of first model
+            model_b_name: Name of second model
+            
+        Returns:
+            Dictionary with judgment results and human-readable report
+        """
+        if not self.judge:
+            return {
+                "success": False,
+                "error": "Judge LLM not available",
+                "judgment": None,
+                "report": None
+            }
+        
+        try:
+            # Extract data from extraction results
+            data_a = result_a.get("data") if result_a.get("success") else {}
+            data_b = result_b.get("data") if result_b.get("success") else {}
+            
+            # Perform judgment
+            judgment = await self.judge.judge_comparison(data_a, data_b, image_path)
+            
+            # Generate human-readable report
+            report = self.judge.create_human_readable_report(judgment, model_a_name, model_b_name)
+            
+            return {
+                "success": True,
+                "judgment": judgment.model_dump(),
+                "report": report
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Judge comparison failed: {str(e)}",
+                "judgment": None,
+                "report": None
+            }
+
+    async def run_judge_tournament(self, benchmark_results: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Run a tournament-style comparison between all model pairs using judge LLM
+        
+        Args:
+            benchmark_results: Results from run_benchmark()
+            
+        Returns:
+            Dictionary with all pairwise comparisons and rankings
+        """
+        if not self.judge:
+            return {
+                "error": "Judge LLM not available",
+                "comparisons": [],
+                "rankings": {}
+            }
+        
+        if "error" in benchmark_results:
+            return {
+                "error": benchmark_results["error"],
+                "comparisons": [],
+                "rankings": {}
+            }
+        
+        print("🏆 Starting judge tournament...")
+        
+        tournament_results = {
+            "timestamp": datetime.now().isoformat(),
+            "comparisons": [],
+            "rankings": {},
+            "summary": {}
+        }
+        
+        # Extract all model results per image
+        for image_result in benchmark_results.get("results", []):
+            image_path = image_result["image_path"]
+            image_name = image_result["image_name"]
+            
+            print(f"  Judging {image_name}...")
+            
+            model_results = {}
+            for test_result in image_result.get("results", []):
+                model = test_result["model"]
+                model_results[model] = test_result["extraction_result"]
+            
+            # Compare all pairs of models for this image
+            models = list(model_results.keys())
+            for i in range(len(models)):
+                for j in range(i + 1, len(models)):
+                    model_a = models[i]
+                    model_b = models[j]
+                    
+                    print(f"    {model_a} vs {model_b}")
+                    
+                    comparison = await self.run_judge_comparison(
+                        model_results[model_a],
+                        model_results[model_b],
+                        image_path,
+                        model_a,
+                        model_b
+                    )
+                    
+                    comparison_record = {
+                        "image_path": image_path,
+                        "image_name": image_name,
+                        "model_a": model_a,
+                        "model_b": model_b,
+                        "comparison": comparison
+                    }
+                    
+                    tournament_results["comparisons"].append(comparison_record)
+        
+        # Calculate overall rankings
+        model_scores = {}
+        win_matrix = {}
+        
+        for comparison in tournament_results["comparisons"]:
+            if not comparison["comparison"]["success"]:
+                continue
+                
+            judgment = comparison["comparison"]["judgment"]
+            model_a = comparison["model_a"]
+            model_b = comparison["model_b"]
+            winner = judgment.get("winner")
+            
+            # Initialize score tracking
+            if model_a not in model_scores:
+                model_scores[model_a] = {"wins": 0, "losses": 0, "ties": 0, "total_score": 0.0}
+            if model_b not in model_scores:
+                model_scores[model_b] = {"wins": 0, "losses": 0, "ties": 0, "total_score": 0.0}
+            
+            # Initialize win matrix
+            if model_a not in win_matrix:
+                win_matrix[model_a] = {}
+            if model_b not in win_matrix:
+                win_matrix[model_b] = {}
+            if model_b not in win_matrix[model_a]:
+                win_matrix[model_a][model_b] = {"wins": 0, "losses": 0, "ties": 0}
+            if model_a not in win_matrix[model_b]:
+                win_matrix[model_b][model_a] = {"wins": 0, "losses": 0, "ties": 0}
+            
+            # Update scores based on judgment
+            if winner == "result_a":
+                model_scores[model_a]["wins"] += 1
+                model_scores[model_b]["losses"] += 1
+                win_matrix[model_a][model_b]["wins"] += 1
+                win_matrix[model_b][model_a]["losses"] += 1
+            elif winner == "result_b":
+                model_scores[model_b]["wins"] += 1
+                model_scores[model_a]["losses"] += 1
+                win_matrix[model_b][model_a]["wins"] += 1
+                win_matrix[model_a][model_b]["losses"] += 1
+            else:  # tie
+                model_scores[model_a]["ties"] += 1
+                model_scores[model_b]["ties"] += 1
+                win_matrix[model_a][model_b]["ties"] += 1
+                win_matrix[model_b][model_a]["ties"] += 1
+            
+            # Add overall scores from judgment
+            overall_scores = judgment.get("overall_scores", {})
+            model_scores[model_a]["total_score"] += overall_scores.get("result_a", 5.0)
+            model_scores[model_b]["total_score"] += overall_scores.get("result_b", 5.0)
+        
+        # Calculate win rates and average scores
+        for model, scores in model_scores.items():
+            total_games = scores["wins"] + scores["losses"] + scores["ties"]
+            if total_games > 0:
+                scores["win_rate"] = scores["wins"] / total_games
+                scores["average_score"] = scores["total_score"] / total_games
+            else:
+                scores["win_rate"] = 0.0
+                scores["average_score"] = 0.0
+        
+        # Rank models by win rate, then by average score
+        sorted_models = sorted(
+            model_scores.items(),
+            key=lambda x: (x[1]["win_rate"], x[1]["average_score"]),
+            reverse=True
+        )
+        
+        tournament_results["rankings"] = {
+            "model_scores": model_scores,
+            "win_matrix": win_matrix,
+            "leaderboard": [{"rank": i+1, "model": model, **scores} 
+                          for i, (model, scores) in enumerate(sorted_models)]
+        }
+        
+        tournament_results["summary"] = {
+            "total_comparisons": len(tournament_results["comparisons"]),
+            "successful_judgments": len([c for c in tournament_results["comparisons"] 
+                                       if c["comparison"]["success"]]),
+            "models_evaluated": len(model_scores),
+            "winner": sorted_models[0][0] if sorted_models else None
+        }
+        
+        return tournament_results
 
     def export_results(self, benchmark_results: Dict[str, Any], 
                       output_dir: str = "results") -> Dict[str, str]:

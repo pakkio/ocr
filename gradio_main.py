@@ -42,6 +42,143 @@ except ImportError:
 
 # --- Standalone Logic Classes (Pydantic-Free) ---
 
+class StandaloneJudgeLLM:
+    """Performs judge comparison without any src/ dependencies."""
+    def __init__(self):
+        self.api_key = os.getenv("OPENROUTER_API_KEY")
+        self.base_url = "https://openrouter.ai/api/v1"
+        self.headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        self.judge_model = "google/gemini-2.5-flash"
+
+    async def _make_api_call(self, payload: Dict) -> Dict:
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            response = await client.post(f"{self.base_url}/chat/completions", headers=self.headers, json=payload)
+            response.raise_for_status()
+            return response.json()
+
+    async def judge_comparison(self, result_a: Dict, result_b: Dict, model_a_name: str, model_b_name: str) -> Dict[str, Any]:
+        """Compare two OCR results using the judge LLM"""
+        if not self.api_key:
+            return {"success": False, "error": "OPENROUTER_API_KEY not set."}
+        
+        criteria = [
+            "Accuracy: How well does the result match the actual content?",
+            "Completeness: How much of the relevant data was captured?", 
+            "Structure: How well-organized and usable is the extracted data?",
+            "Utility: How useful would this be for further analysis?"
+        ]
+        
+        criteria_desc = "\n".join([f"- {criterion}" for criterion in criteria])
+        
+        prompt = f"""
+You are an expert judge evaluating two OCR extraction results from the same dashboard image.
+
+**Your Task:** Compare the two OCR extraction results and determine which one is better overall.
+
+**Evaluation Criteria:**
+{criteria_desc}
+
+**Result A ({model_a_name}):**
+```json
+{json.dumps(result_a, indent=2)}
+```
+
+**Result B ({model_b_name}):**
+```json
+{json.dumps(result_b, indent=2)}
+```
+
+**Instructions:**
+1. Evaluate both results against each criterion (score 0-10 for each)
+2. Provide an overall winner: "result_a", "result_b", or "tie"
+3. Give a confidence score (0.0-1.0) for your decision
+4. Provide clear, human-readable reasoning for your judgment
+
+**Important:** Focus on accuracy, completeness, structure, and practical utility. Consider:
+- Which result captures more relevant data from the dashboard?
+- Which has better structured organization?
+- Which would be more useful for downstream analysis?
+- Which handles complex layouts and overlapping elements better?
+
+Respond with a structured analysis in JSON format with keys: winner, confidence, reasoning, criteria_scores, overall_scores.
+"""
+        
+        payload = {
+            "model": self.judge_model,
+            "messages": [
+                {"role": "system", "content": "You are an expert OCR evaluation judge. Provide structured, objective comparisons."},
+                {"role": "user", "content": prompt}
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.1,
+            "max_tokens": 1500
+        }
+        
+        try:
+            response_data = await self._make_api_call(payload)
+            content = response_data['choices'][0]['message']['content']
+            
+            # Remove markdown code blocks if present
+            json_content = content.strip()
+            if json_content.startswith('```json'):
+                json_content = json_content[7:]
+            if json_content.startswith('```'):
+                json_content = json_content[3:]
+            if json_content.endswith('```'):
+                json_content = json_content[:-3]
+            json_content = json_content.strip()
+            
+            judgment_data = json.loads(json_content)
+            return {"success": True, "judgment": judgment_data}
+            
+        except Exception as e:
+            return {"success": False, "error": f"Judge comparison failed: {str(e)}"}
+
+    def create_human_readable_report(self, judgment: Dict, model_a_name: str, model_b_name: str) -> str:
+        """Create a human-readable report from the judgment result"""
+        
+        winner_map = {
+            "result_a": model_a_name,
+            "result_b": model_b_name,
+            "tie": "🤝 Tie"
+        }
+        
+        winner_name = winner_map.get(judgment.get("winner"), "Unknown")
+        confidence = judgment.get("confidence", 0.0)
+        reasoning = judgment.get("reasoning", "No reasoning provided")
+        
+        report = f"""
+## 🏆 OCR Comparison Judgment
+
+**Winner:** {winner_name} (Confidence: {confidence:.1%})
+
+**Reasoning:**
+{reasoning}
+
+**Detailed Scores:**
+
+| Criterion | {model_a_name} | {model_b_name} |
+|-----------|----------------|----------------|
+"""
+        
+        criteria_scores = judgment.get("criteria_scores", {})
+        result_a_scores = criteria_scores.get("result_a", {})
+        result_b_scores = criteria_scores.get("result_b", {})
+        
+        for criterion in result_a_scores.keys():
+            score_a = result_a_scores.get(criterion, 0)
+            score_b = result_b_scores.get(criterion, 0)
+            report += f"| {criterion.title()} | {score_a:.1f}/10 | {score_b:.1f}/10 |\n"
+        
+        overall_scores = judgment.get("overall_scores", {})
+        report += f"""
+**Overall Scores:**
+- {model_a_name}: {overall_scores.get("result_a", 0):.1f}/10
+- {model_b_name}: {overall_scores.get("result_b", 0):.1f}/10
+"""
+        
+        return report
+
 DASHBOARD_SCHEMA_DICT = {
     "dashboard_title": "string (optional)",
     "charts": [{"title": "string (optional)", "type": "string (e.g., 'pie', 'bar')", "data_points": [{"label": "string", "value": "number or string"}]}],
@@ -211,6 +348,141 @@ def create_app():
         gr.Markdown("Upload an image or select one of the examples from the `data` directory using the upload button.")
         
         with gr.Tabs():
+            with gr.Tab("🏆 Judge Comparison"):
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        judge_image = gr.Image(type="pil", label="🖼️ Upload Dashboard")
+                        judge_models = gr.CheckboxGroup(
+                            choices=["gpt-4o", "anthropic/claude-3.5-sonnet", "google/gemini-2.5-flash", "google/gemini-pro-1.5", "openai/gpt-4o-mini"],
+                            value=["gpt-4o", "anthropic/claude-3.5-sonnet"],
+                            label="🤖 Select 2+ Models to Compare"
+                        )
+                        judge_run_btn = gr.Button("🥊 Run Judge Comparison", variant="primary")
+                    with gr.Column(scale=2):
+                        judge_summary = gr.Markdown(label="📊 Comparison Summary")
+                        judge_winner = gr.Markdown(label="🏆 Winner & Reasoning")
+                        judge_detailed = gr.Markdown(label="📈 Detailed Scores")
+                
+                with gr.Accordion("📋 Individual Results", open=False):
+                    judge_results = gr.Code(label="Individual OCR Results", language="json", lines=15)
+                
+                with gr.Accordion("🔍 Raw Judge Data", open=False):
+                    judge_raw = gr.Code(label="Complete Judge Analysis", language="json", lines=10)
+
+                async def run_judge_comparison(image, models):
+                    if image is None:
+                        return "❌ Please upload an image", "", "", "{}", "{}"
+                    if len(models) < 2:
+                        return "❌ Please select at least 2 models to compare", "", "", "{}", "{}"
+                    
+                    # Extract data with all selected models
+                    extraction_results = []
+                    for model in models:
+                        result = await structured_handler.extract(image, model)
+                        extraction_results.append({"model": model, "result": result})
+                    
+                    # Filter successful extractions
+                    successful_extractions = [r for r in extraction_results if r["result"].get("success")]
+                    
+                    if len(successful_extractions) < 2:
+                        summary = f"❌ Only {len(successful_extractions)} successful extractions. Need at least 2 for comparison."
+                        results_json = json.dumps(extraction_results, indent=2, default=str)
+                        return summary, "", "", results_json, "{}"
+                    
+                    # Initialize judge
+                    judge = StandaloneJudgeLLM()
+                    
+                    # Run pairwise comparisons
+                    comparisons = []
+                    model_wins = {model: 0 for model in models if any(r["model"] == model for r in successful_extractions)}
+                    model_scores = {model: [] for model in models if any(r["model"] == model for r in successful_extractions)}
+                    
+                    successful_models = [r["model"] for r in successful_extractions]
+                    
+                    for i in range(len(successful_extractions)):
+                        for j in range(i + 1, len(successful_extractions)):
+                            model_a = successful_extractions[i]["model"]
+                            model_b = successful_extractions[j]["model"]
+                            result_a = successful_extractions[i]["result"]["data"]
+                            result_b = successful_extractions[j]["result"]["data"]
+                            
+                            judgment = await judge.judge_comparison(result_a, result_b, model_a, model_b)
+                            
+                            if judgment.get("success"):
+                                judgment_data = judgment["judgment"]
+                                winner = judgment_data.get("winner")
+                                
+                                # Track wins
+                                if winner == "result_a":
+                                    model_wins[model_a] += 1
+                                elif winner == "result_b":
+                                    model_wins[model_b] += 1
+                                
+                                # Track scores
+                                overall_scores = judgment_data.get("overall_scores", {})
+                                model_scores[model_a].append(overall_scores.get("result_a", 5.0))
+                                model_scores[model_b].append(overall_scores.get("result_b", 5.0))
+                                
+                                # Create readable report
+                                report = judge.create_human_readable_report(judgment_data, model_a, model_b)
+                                
+                                comparisons.append({
+                                    "models": f"{model_a} vs {model_b}",
+                                    "winner": winner,
+                                    "confidence": judgment_data.get("confidence", 0.0),
+                                    "report": report
+                                })
+                    
+                    if not comparisons:
+                        return "❌ No successful comparisons completed", "", "", json.dumps(extraction_results, indent=2), "{}"
+                    
+                    # Calculate final rankings
+                    final_rankings = []
+                    for model in successful_models:
+                        wins = model_wins[model]
+                        total_comparisons = len([c for c in comparisons if model in c["models"]])
+                        win_rate = wins / total_comparisons if total_comparisons > 0 else 0
+                        avg_score = sum(model_scores[model]) / len(model_scores[model]) if model_scores[model] else 0
+                        final_rankings.append({
+                            "model": model,
+                            "wins": wins,
+                            "total_comparisons": total_comparisons,
+                            "win_rate": win_rate,
+                            "avg_score": avg_score
+                        })
+                    
+                    # Sort by win rate, then by average score
+                    final_rankings.sort(key=lambda x: (x["win_rate"], x["avg_score"]), reverse=True)
+                    
+                    # Create summary
+                    summary = f"**🏆 Tournament Results** ({len(comparisons)} comparisons)\n\n"
+                    summary += "**🥇 Final Rankings:**\n"
+                    for i, ranking in enumerate(final_rankings):
+                        medal = ["🥇", "🥈", "🥉"][i] if i < 3 else f"{i+1}."
+                        summary += f"{medal} **{ranking['model']}** - {ranking['wins']}/{ranking['total_comparisons']} wins ({ranking['win_rate']:.1%}) - Avg: {ranking['avg_score']:.1f}/10\n"
+                    
+                    # Create winner section with best comparison
+                    best_comparison = max(comparisons, key=lambda x: x["confidence"])
+                    winner_text = f"**🎯 Highest Confidence Comparison:**\n{best_comparison['report']}"
+                    
+                    # Create detailed scores section
+                    detailed_text = "**📊 All Pairwise Comparisons:**\n\n"
+                    for comp in comparisons:
+                        detailed_text += f"### {comp['models']}\n"
+                        detailed_text += f"**Confidence:** {comp['confidence']:.1%}\n\n"
+                        detailed_text += "---\n\n"
+                    
+                    results_json = json.dumps(extraction_results, indent=2, default=str)
+                    judge_json = json.dumps(comparisons, indent=2, default=str)
+                    
+                    return summary, winner_text, detailed_text, results_json, judge_json
+
+                judge_run_btn.click(
+                    fn=run_judge_comparison,
+                    inputs=[judge_image, judge_models],
+                    outputs=[judge_summary, judge_winner, judge_detailed, judge_results, judge_raw]
+                )
+            
             with gr.Tab("📊 Structured JSON Extraction"):
                 with gr.Row():
                     with gr.Column(scale=1):

@@ -23,9 +23,10 @@
 ### 3. Applications Developed (🆕 UPDATED)
 - ✅ `ocr_tester.py` - App base per OCR tradizionali
 - ✅ `advanced_ocr_app.py` - Benchmark completo ibrido
-- ✅ `structured_benchmark.py` - **Main application** per JSON extraction
-- ✅ `gradio_main.py` - **Modern Gradio interface** con tutti i modelli
+- ✅ `structured_benchmark.py` - **Main application** per JSON extraction con judge system
+- ✅ `gradio_main.py` - **Modern Gradio interface** con judge comparison tab
 - ✅ `comprehensive_test_suite.py` - **Automated testing** di tutti i modelli
+- ✅ `src/judge_llm.py` - **Judge LLM System** per automated model comparison
 
 ## 🔧 Architettura Tecnica
 
@@ -55,6 +56,14 @@ class StructuredOCRProvider(BaseOCRProvider):
     def discover_data_files(self, data_dir) -> List[str]
 ```
 
+#### Judge LLM System (`src/judge_llm.py`)
+```python
+class JudgeLLM:
+    async def judge_comparison(self, result_a, result_b, image_path) -> JudgmentResult
+    def create_human_readable_report(self, judgment, model_a, model_b) -> str
+    async def run_tournament(self, results_dict) -> TournamentResults
+```
+
 ### Data Schemas (`src/schemas.py`)
 
 #### Dashboard Data Structure
@@ -77,6 +86,16 @@ class QualityAssessment(BaseModel):
     recommendations: List[str]
 ```
 
+#### Judge System Schemas
+```python
+class JudgmentResult(BaseModel):
+    winner: str  # "result_a", "result_b", or "tie"
+    confidence: float  # 0.0-1.0
+    reasoning: str
+    criteria_scores: Dict[str, Dict[str, float]]  # per model per criterion
+    overall_scores: Dict[str, float]  # result_a/result_b overall scores
+```
+
 ## 🚀 Features Implementate
 
 ### 1. Auto-Discovery System
@@ -90,11 +109,14 @@ class QualityAssessment(BaseModel):
 - **Multi-model support** (GPT-4o, Claude, Gemini, Mistral, Qwen2-VL)
 - **Error handling** con retry logic
 
-### 3. LLM Quality Assessment
+### 3. LLM Quality Assessment & Judge System
 - **Dual-LLM approach**: extraction model + assessment model
 - **Quality metrics**: completeness, accuracy, structure (0-10)
 - **Specific feedback**: missing elements, potential errors, recommendations
 - **Cost optimization**: expensive model per extraction, cheap per assessment
+- **🆕 Judge LLM System**: Head-to-head model comparison with tournament-style rankings
+- **🆕 Pairwise comparisons**: Automated evaluation of OCR results across all model pairs
+- **🆕 Confidence scoring**: Statistical confidence in judgment decisions
 
 ### 4. Visualization & Export
 - **Interactive charts** con Plotly per visualizzare extracted data
@@ -181,6 +203,11 @@ Extracted JSON → LLM Judge → Scores (0-10) → Recommendations → Report
 ### 3. Multi-Model Comparison
 ```
 Same Image → Multiple VLMs → Parallel Extraction → Quality Scores → Ranking
+```
+
+### 4. Judge LLM Tournament System
+```
+Model Results → Pairwise Comparisons → Judge LLM → Win/Loss Matrix → Final Rankings
 ```
 
 ## 💡 Learnings & Insights
@@ -334,3 +361,4 @@ python run_tests.py --mode quick
 - ✅ **Standalone classes** - Core functionality independent of UI framework
 - ✅ **Enhanced testing** - Comprehensive automated test suite
 - ✅ **Production ready** - Poetry 2.0, proper documentation, CI/CD ready
+- ✅ **Judge LLM System** - Advanced head-to-head model comparison with automated scoring
