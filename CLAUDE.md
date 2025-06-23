@@ -11,16 +11,21 @@
 - ✅ **Provider abstraction** con base classes (`src/providers/base.py`)
 - ✅ **Pydantic schemas** per validation (`src/schemas.py`)
 
-### 2. Multi-Provider Support
+### 2. Multi-Provider Support (🆕 UPDATED)
 - ✅ **OpenRouter integration** per accesso unificato VLM
 - ✅ **Traditional OCR** (EasyOCR, PaddleOCR, Tesseract)
 - ✅ **Structured JSON extraction** con schema validation
 - ✅ **Quality assessment** via LLM
+- ✅ **13 VLM models** supportati (OpenAI, Anthropic, Google)
+- ✅ **Fallback mechanisms** per compatibility issues
+- ✅ **Markdown parsing** per Claude models
 
-### 3. Applications Developed
+### 3. Applications Developed (🆕 UPDATED)
 - ✅ `ocr_tester.py` - App base per OCR tradizionali
 - ✅ `advanced_ocr_app.py` - Benchmark completo ibrido
 - ✅ `structured_benchmark.py` - **Main application** per JSON extraction
+- ✅ `gradio_main.py` - **Modern Gradio interface** con tutti i modelli
+- ✅ `comprehensive_test_suite.py` - **Automated testing** di tutti i modelli
 
 ## 🔧 Architettura Tecnica
 
@@ -97,17 +102,38 @@ class QualityAssessment(BaseModel):
 - **JSON/CSV export** per ulteriori analisi
 - **Raw data inspection** con collapsible sections
 
-## 📊 Modelli VLM Supportati
+## 📊 Modelli VLM Supportati (🆕 AGGIORNATO)
 
-| Model | Provider | Cost/1k tokens | Specialization |
-|-------|----------|----------------|----------------|
-| **gpt-4o** | OpenAI | $0.005 | Best general performance |
-| **claude-3-5-sonnet** | Anthropic | $0.003 | Excellent reasoning |
-| **claude-3-5-haiku** | Anthropic | $0.00025 | Speed optimized |
-| **gemini-pro-1.5** | Google | $0.00125 | Good value/performance |
-| **gemini-flash-1.5** | Google | $0.000075 | Ultra fast/cheap |
-| **mistral-pixtral-12b** | Mistral | $0.0015 | European alternative |
-| **qwen2-vl-72b** | Alibaba | $0.0009 | Open source champion |
+### OpenAI Models
+| Model | Cost/1k tokens | Schema Support | Specialization |
+|-------|----------------|----------------|----------------|
+| **gpt-4o** | $0.005 | ✅ Strict | Best general performance |
+| **gpt-4o-mini** | $0.00015 | 🔄 Fallback | Cost-effective alternative |
+| **gpt-4.1** | $0.008 | 🔄 Fallback | Latest generation |
+| **gpt-4.1-mini** | $0.0002 | 🔄 Fallback | Improved mini version |
+| **gpt-4.1-nano** | $0.0001 | 🔄 Fallback | Ultra-efficient |
+
+### Anthropic Models  
+| Model | Cost/1k tokens | Schema Support | Specialization |
+|-------|----------------|----------------|----------------|
+| **claude-3.5-sonnet** | $0.003 | ✅ Strict + Markdown | Excellent reasoning |
+| **claude-sonnet-4** | $0.003 | ✅ Strict + Markdown | Latest generation |
+| **claude-3.7-sonnet** | $0.003 | ✅ Strict + Markdown | Improved reasoning |
+| **claude-3.5-haiku** | $0.00025 | 🔄 Fallback | Speed optimized |
+
+### Google Models
+| Model | Cost/1k tokens | Schema Support | Specialization |
+|-------|----------------|----------------|----------------|
+| **gemini-2.5-pro** | $0.001 | 🔄 Fallback | Latest generation |
+| **gemini-2.5-flash** | $0.000075 | 🔄 Fallback | Ultra fast/cheap |
+| **gemini-2.5-flash-lite** | $0.00005 | 🔄 Fallback | Most economical |
+| **gemini-pro-1.5** | $0.00125 | ✅ Strict | Good value/performance |
+| **gemini-flash-1.5** | $0.000075 | ✅ Strict | Previous generation |
+
+**Legend:**
+- ✅ **Strict**: Supports OpenRouter strict JSON schema mode
+- 🔄 **Fallback**: Uses json_object mode with enhanced prompting
+- **Markdown**: Handles markdown-wrapped JSON responses
 
 ## 🎯 Testing Strategy
 
@@ -190,11 +216,43 @@ Same Image → Multiple VLMs → Parallel Extraction → Quality Scores → Rank
 - **Type safety** con Python typing
 - **Clear error messages** per debugging
 
-### Why Streamlit?
-- **Rapid prototyping** per UI interactive
+### Why Streamlit & Gradio?
+- **Streamlit**: Rapid prototyping per UI interactive
+- **Gradio**: Modern interface con better model support
 - **Built-in widgets** per file upload, charts
 - **Easy deployment** senza frontend complexity
 - **Real-time updates** per benchmark progress
+
+## 🆕 Recent Technical Improvements
+
+### 1. Enhanced Model Compatibility
+- **Correct model names** per OpenRouter API (`anthropic/claude-3.5-sonnet`)
+- **Schema compatibility flags** (`supports_strict_json_schema`)
+- **Automatic fallback mechanisms** da strict a json_object mode
+
+### 2. Markdown Response Handling
+```python
+# Remove markdown code blocks if present
+json_content = content.strip()
+if json_content.startswith('```json'):
+    json_content = json_content[7:]  # Remove ```json
+if json_content.endswith('```'):
+    json_content = json_content[:-3]  # Remove trailing ```
+```
+
+### 3. JSON Schema Strictness
+```python
+# Add additionalProperties: false for newer OpenAI models
+def add_additional_properties_false(obj):
+    if isinstance(obj, dict) and obj.get('type') == 'object':
+        obj['additionalProperties'] = False
+```
+
+### 4. Comprehensive Testing Framework
+- **Automated model testing** across all providers
+- **Performance benchmarking** con timing metrics
+- **Compatibility matrix** generation
+- **Success rate tracking** per provider/model
 
 ## 🎯 Results & Metrics
 

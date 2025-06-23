@@ -51,7 +51,7 @@ class StructuredOCRProvider(BaseOCRProvider):
         model: str = "gpt-4o",
         custom_prompt: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Extract structured dashboard data using JSON schema"""
+        """Extract structured dashboard data using JSON schema with fallback"""
         
         prompt = custom_prompt or DASHBOARD_EXTRACTION_PROMPT
         
@@ -59,11 +59,28 @@ class StructuredOCRProvider(BaseOCRProvider):
             # Convert image to base64
             image_b64 = self.image_to_base64(image)
             
+            # Check if model supports strict JSON schema
+            model_config = self.config.available_models.get(model, {})
+            supports_strict_schema = model_config.get("supports_strict_json_schema", True)
+            
             # Get Pydantic schema for structured output
             schema = DashboardData.model_json_schema()
             
-            # Prepare request with structured output
-            payload = {
+            # Add additionalProperties: false for newer OpenAI models that require it
+            def add_additional_properties_false(obj):
+                if isinstance(obj, dict):
+                    if 'type' in obj and obj['type'] == 'object':
+                        obj['additionalProperties'] = False
+                    for value in obj.values():
+                        add_additional_properties_false(value)
+                elif isinstance(obj, list):
+                    for item in obj:
+                        add_additional_properties_false(item)
+            
+            add_additional_properties_false(schema)
+            
+            # Prepare base request
+            base_payload = {
                 "model": model,
                 "messages": [
                     {
@@ -71,7 +88,7 @@ class StructuredOCRProvider(BaseOCRProvider):
                         "content": [
                             {
                                 "type": "text",
-                                "text": prompt
+                                "text": prompt + "\n\nIMPORTANT: Respond with valid JSON matching the DashboardData schema."
                             },
                             {
                                 "type": "image_url",
@@ -83,8 +100,12 @@ class StructuredOCRProvider(BaseOCRProvider):
                     }
                 ],
                 "max_tokens": 4000,
-                "temperature": 0.1,
-                "response_format": {
+                "temperature": 0.1
+            }
+            
+            # Add response format based on model capabilities
+            if supports_strict_schema:
+                base_payload["response_format"] = {
                     "type": "json_schema",
                     "json_schema": {
                         "name": "dashboard_extraction",
@@ -92,7 +113,12 @@ class StructuredOCRProvider(BaseOCRProvider):
                         "schema": schema
                     }
                 }
-            }
+            else:
+                base_payload["response_format"] = {
+                    "type": "json_object"
+                }
+            
+            payload = base_payload
             
             # Make API request
             async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
@@ -108,9 +134,19 @@ class StructuredOCRProvider(BaseOCRProvider):
                             data = response.json()
                             content = data['choices'][0]['message']['content']
                             
-                            # Parse JSON response
+                            # Parse JSON response, handling markdown code blocks
                             try:
-                                structured_data = json.loads(content)
+                                # Remove markdown code blocks if present
+                                json_content = content.strip()
+                                if json_content.startswith('```json'):
+                                    json_content = json_content[7:]  # Remove ```json
+                                if json_content.startswith('```'):
+                                    json_content = json_content[3:]   # Remove ```
+                                if json_content.endswith('```'):
+                                    json_content = json_content[:-3]  # Remove trailing ```
+                                json_content = json_content.strip()
+                                
+                                structured_data = json.loads(json_content)
                                 # Validate against Pydantic model
                                 dashboard_data = DashboardData(**structured_data)
                                 return {
@@ -173,20 +209,41 @@ class StructuredOCRProvider(BaseOCRProvider):
         )
         
         try:
+            # Check if model supports strict JSON schema
+            model_config = self.config.available_models.get(model, {})
+            supports_strict_schema = model_config.get("supports_strict_json_schema", True)
+            
             # Get assessment schema
             schema = QualityAssessment.model_json_schema()
             
-            payload = {
+            # Add additionalProperties: false for newer OpenAI models that require it
+            def add_additional_properties_false(obj):
+                if isinstance(obj, dict):
+                    if 'type' in obj and obj['type'] == 'object':
+                        obj['additionalProperties'] = False
+                    for value in obj.values():
+                        add_additional_properties_false(value)
+                elif isinstance(obj, list):
+                    for item in obj:
+                        add_additional_properties_false(item)
+            
+            add_additional_properties_false(schema)
+            
+            base_payload = {
                 "model": model,
                 "messages": [
                     {
                         "role": "user",
-                        "content": prompt
+                        "content": prompt + "\n\nIMPORTANT: Respond with valid JSON matching the QualityAssessment schema."
                     }
                 ],
                 "max_tokens": 2000,
-                "temperature": 0.3,
-                "response_format": {
+                "temperature": 0.3
+            }
+            
+            # Add response format based on model capabilities
+            if supports_strict_schema:
+                base_payload["response_format"] = {
                     "type": "json_schema", 
                     "json_schema": {
                         "name": "quality_assessment",
@@ -194,7 +251,12 @@ class StructuredOCRProvider(BaseOCRProvider):
                         "schema": schema
                     }
                 }
-            }
+            else:
+                base_payload["response_format"] = {
+                    "type": "json_object"
+                }
+            
+            payload = base_payload
             
             async with httpx.AsyncClient(timeout=self.config.timeout_seconds) as client:
                 response = await client.post(
@@ -208,7 +270,17 @@ class StructuredOCRProvider(BaseOCRProvider):
                     content = data['choices'][0]['message']['content']
                     
                     try:
-                        assessment_data = json.loads(content)
+                        # Remove markdown code blocks if present
+                        json_content = content.strip()
+                        if json_content.startswith('```json'):
+                            json_content = json_content[7:]  # Remove ```json
+                        if json_content.startswith('```'):
+                            json_content = json_content[3:]   # Remove ```
+                        if json_content.endswith('```'):
+                            json_content = json_content[:-3]  # Remove trailing ```
+                        json_content = json_content.strip()
+                        
+                        assessment_data = json.loads(json_content)
                         assessment = QualityAssessment(**assessment_data)
                         return {
                             "success": True,
@@ -297,7 +369,7 @@ class StructuredOCRProvider(BaseOCRProvider):
         """Run comprehensive benchmark on all images in data directory"""
         
         if models is None:
-            models = ["gpt-4o", "claude-3-5-sonnet-20241022", "gpt-4-vision-preview"]
+            models = ["gpt-4o", "anthropic/claude-3.5-sonnet", "gpt-4-vision-preview"]
         
         # Discover images
         image_files = self.discover_data_files(data_dir)

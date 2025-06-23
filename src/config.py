@@ -36,55 +36,127 @@ class OCRConfig(BaseSettings):
             "name": "GPT-4 Vision Preview",
             "provider": "openai",
             "cost_per_1k_tokens": 0.01,
-            "supports_vision": True
+            "supports_vision": True,
+            "supports_strict_json_schema": True
         },
         "gpt-4o": {
             "name": "GPT-4o",
             "provider": "openai", 
             "cost_per_1k_tokens": 0.005,
-            "supports_vision": True
+            "supports_vision": True,
+            "supports_strict_json_schema": True
         },
-        "claude-3-5-sonnet-20241022": {
+        "openai/gpt-4o-mini": {
+            "name": "GPT-4o Mini",
+            "provider": "openai",
+            "cost_per_1k_tokens": 0.00015,
+            "supports_vision": True,
+            "supports_strict_json_schema": False
+        },
+        "openai/gpt-4.1": {
+            "name": "GPT-4.1",
+            "provider": "openai",
+            "cost_per_1k_tokens": 0.008,
+            "supports_vision": True,
+            "supports_strict_json_schema": False
+        },
+        "openai/gpt-4.1-mini": {
+            "name": "GPT-4.1 Mini",
+            "provider": "openai",
+            "cost_per_1k_tokens": 0.0002,
+            "supports_vision": True,
+            "supports_strict_json_schema": False
+        },
+        "openai/gpt-4.1-nano": {
+            "name": "GPT-4.1 Nano",
+            "provider": "openai",
+            "cost_per_1k_tokens": 0.0001,
+            "supports_vision": True,
+            "supports_strict_json_schema": False
+        },
+        "anthropic/claude-3.5-sonnet": {
             "name": "Claude 3.5 Sonnet",
             "provider": "anthropic",
             "cost_per_1k_tokens": 0.003,
-            "supports_vision": True
+            "supports_vision": True,
+            "supports_strict_json_schema": True
         },
-        "claude-3-5-haiku-20241022": {
+        "anthropic/claude-sonnet-4": {
+            "name": "Claude Sonnet 4",
+            "provider": "anthropic",
+            "cost_per_1k_tokens": 0.003,
+            "supports_vision": True,
+            "supports_strict_json_schema": True
+        },
+        "anthropic/claude-3.7-sonnet": {
+            "name": "Claude 3.7 Sonnet",
+            "provider": "anthropic",
+            "cost_per_1k_tokens": 0.003,
+            "supports_vision": True,
+            "supports_strict_json_schema": True
+        },
+        "anthropic/claude-3.5-haiku": {
             "name": "Claude 3.5 Haiku",
             "provider": "anthropic",
             "cost_per_1k_tokens": 0.00025,
-            "supports_vision": True
+            "supports_vision": True,
+            "supports_strict_json_schema": False
         },
         "google/gemini-pro-1.5": {
             "name": "Gemini Pro 1.5",
             "provider": "google",
             "cost_per_1k_tokens": 0.00125,
-            "supports_vision": True
+            "supports_vision": True,
+            "supports_strict_json_schema": True
         },
         "google/gemini-flash-1.5": {
             "name": "Gemini Flash 1.5",
             "provider": "google",
             "cost_per_1k_tokens": 0.000075,
-            "supports_vision": True
+            "supports_vision": True,
+            "supports_strict_json_schema": True
+        },
+        "google/gemini-2.5-pro": {
+            "name": "Gemini 2.5 Pro",
+            "provider": "google",
+            "cost_per_1k_tokens": 0.001,
+            "supports_vision": True,
+            "supports_strict_json_schema": False
+        },
+        "google/gemini-2.5-flash": {
+            "name": "Gemini 2.5 Flash",
+            "provider": "google",
+            "cost_per_1k_tokens": 0.000075,
+            "supports_vision": True,
+            "supports_strict_json_schema": False
+        },
+        "google/gemini-2.5-flash-lite-preview-06-17": {
+            "name": "Gemini 2.5 Flash Lite",
+            "provider": "google",
+            "cost_per_1k_tokens": 0.00005,
+            "supports_vision": True,
+            "supports_strict_json_schema": False
         },
         "mistralai/pixtral-12b": {
             "name": "Mistral Pixtral 12B",
             "provider": "mistral",
             "cost_per_1k_tokens": 0.0015,
-            "supports_vision": True
+            "supports_vision": True,
+            "supports_strict_json_schema": False
         },
         "qwen/qwen-2-vl-72b-instruct": {
             "name": "Qwen2-VL 72B",
             "provider": "qwen",
             "cost_per_1k_tokens": 0.0009,
-            "supports_vision": True
+            "supports_vision": True,
+            "supports_strict_json_schema": False
         },
         "qwen/qwen-2-vl-7b-instruct": {
             "name": "Qwen2-VL 7B",
             "provider": "qwen",
             "cost_per_1k_tokens": 0.0002,
-            "supports_vision": True
+            "supports_vision": True,
+            "supports_strict_json_schema": False
         }
     })
     
