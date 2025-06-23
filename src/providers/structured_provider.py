@@ -163,6 +163,28 @@ class StructuredOCRProvider(BaseOCRProvider):
                                 json_content = json_content.strip()
                                 
                                 structured_data = json.loads(json_content)
+                                
+                                # Handle case where AI returns a list instead of dict
+                                if isinstance(structured_data, list):
+                                    if len(structured_data) == 1 and isinstance(structured_data[0], dict):
+                                        structured_data = structured_data[0]
+                                    else:
+                                        return {
+                                            "success": False,
+                                            "error": f"Expected object but got list with {len(structured_data)} items",
+                                            "raw_content": content,
+                                            "model": model
+                                        }
+                                
+                                # Ensure we have a dictionary for validation
+                                if not isinstance(structured_data, dict):
+                                    return {
+                                        "success": False,
+                                        "error": f"Expected object but got {type(structured_data).__name__}",
+                                        "raw_content": content,
+                                        "model": model
+                                    }
+                                
                                 # Validate against Pydantic model
                                 dashboard_data = DashboardData(**structured_data)
                                 return {
