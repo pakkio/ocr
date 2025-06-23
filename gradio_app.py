@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 import os
 
 # Import our structured OCR modules
-from src.providers.traditional_provider import TraditionalOCRProvider
+# from src.providers.traditional_provider import TraditionalOCRProvider
 # Temporarily disable structured provider to avoid Gradio/Pydantic schema conflicts
 STRUCTURED_AVAILABLE = False
 StructuredOCRProvider = None
@@ -33,7 +33,7 @@ class GradioOCRBenchmark:
         try:
             if STRUCTURED_AVAILABLE and self.config.openrouter_api_key and StructuredOCRProvider:
                 self.structured_provider = StructuredOCRProvider(self.config)
-            self.traditional_provider = TraditionalOCRProvider(self.config)
+            # self.traditional_provider = TraditionalOCRProvider(self.config)
             return True
         except Exception as e:
             return f"Provider initialization failed: {str(e)}"
