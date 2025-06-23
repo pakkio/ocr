@@ -4,11 +4,17 @@ from enum import Enum
 
 class ChartType(str, Enum):
     LINE = "line"
+    LINE_CHART = "Line Chart"
     BAR = "bar"
+    BAR_CHART = "Bar Chart"
     PIE = "pie"
+    PIE_CHART = "Pie Chart"
     AREA = "area"
+    AREA_CHART = "Area Chart"
     DONUT = "donut"
+    DONUT_CHART = "Donut Chart"
     GAUGE = "gauge"
+    GAUGE_CHART = "Gauge Chart"
     TABLE = "table"
     METRIC = "metric"
 
@@ -23,7 +29,7 @@ class Chart(BaseModel):
     """Individual chart or widget in dashboard"""
     title: Optional[str] = Field(None, description="Chart title if visible")
     type: ChartType = Field(description="Type of chart/visualization")
-    data_points: List[DataPoint] = Field(description="All data points in the chart")
+    data_points: List[DataPoint] = Field(default_factory=list, description="All data points in the chart")
     x_axis_label: Optional[str] = Field(None, description="X-axis label")
     y_axis_label: Optional[str] = Field(None, description="Y-axis label")
     units: Optional[str] = Field(None, description="Units of measurement (%, $, etc.)")

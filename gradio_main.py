@@ -921,7 +921,12 @@ Both fighters performed equally well in this round.
                         return error_msg, "", "", "", {}, {"error": ai_structured_result.get('error', 'Unknown error')}
                     
                     ai_structured = ai_structured_result.get("data", {})
+                    print(f"DEBUG - AI Structured Data: {ai_structured}")
+                    
                     ai_quality = await ai_provider.assess_extraction_quality(ai_structured, f"Battle arena image")
+                    
+                    # Debug: Print quality assessment result
+                    print(f"DEBUG - AI Quality Assessment Result: {ai_quality}")
                     
                     # Calculate battle scores
                     traditional_score = {
@@ -931,12 +936,17 @@ Both fighters performed equally well in this round.
                         'success': not bool(traditional_result.error)
                     }
                     
+                    # Extract quality scores from the assessment result
+                    quality_data = ai_quality.get('assessment', {}) if ai_quality.get('success') else {}
+                    print(f"DEBUG - Quality Data: {quality_data}")
+                    print(f"DEBUG - AI Quality Success: {ai_quality.get('success')}")
+                    
                     ai_score = {
                         'charts_found': len(ai_structured.get('charts', [])),
                         'metrics_found': len(ai_structured.get('metrics', [])),
-                        'completeness': ai_quality.get('completeness_score', 0),
-                        'accuracy': ai_quality.get('accuracy_score', 0),
-                        'structure': ai_quality.get('structure_score', 0)
+                        'completeness': quality_data.get('completeness_score', 0),
+                        'accuracy': quality_data.get('accuracy_score', 0),
+                        'structure': quality_data.get('structure_score', 0)
                     }
                     
                     # Scoring system (0-10 scale)

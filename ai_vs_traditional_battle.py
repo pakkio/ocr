@@ -118,19 +118,28 @@ class AIvsTraditionalBattle:
             start_time = time.time()
             try:
                 # Extract structured data
-                structured_data = await self.ai_provider.extract_structured_data(image, model)
+                structured_result = await self.ai_provider.extract_structured_data(image, model)
+                
+                # Check if extraction was successful
+                if not structured_result.get("success", False):
+                    raise Exception(structured_result.get("error", "Extraction failed"))
+                
+                structured_data = structured_result.get("data", {})
                 
                 # Also get quality assessment 
-                quality_data = await self.ai_provider.assess_extraction_quality(
+                quality_result = await self.ai_provider.assess_extraction_quality(
                     structured_data, 
                     f"Dashboard image: {image_name}"
                 )
+                
+                # Extract quality data from the result
+                quality_data = quality_result.get('assessment', {}) if quality_result.get('success') else {}
                 
                 execution_time = time.time() - start_time
                 
                 results[model] = {
                     'structured_data': structured_data,
-                    'quality_assessment': quality_data,
+                    'quality_assessment': quality_result,
                     'execution_time': execution_time,
                     'charts_extracted': len(structured_data.get('charts', [])),
                     'metrics_extracted': len(structured_data.get('metrics', [])),

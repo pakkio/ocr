@@ -45,6 +45,53 @@ class StructuredOCRProvider(BaseOCRProvider):
         
         return sorted(image_files)
     
+    def _normalize_dashboard_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalize dashboard data to match Pydantic schema expectations"""
+        
+        # Normalize charts
+        if "charts" in data:
+            for chart in data["charts"]:
+                # Normalize chart type - convert "Line Chart" to "line", etc.
+                if "type" in chart:
+                    chart_type = chart["type"]
+                    if isinstance(chart_type, str):
+                        # Handle different chart type formats
+                        normalized_type = chart_type.lower()
+                        if normalized_type in ["line chart", "line_chart"]:
+                            chart["type"] = "line"
+                        elif normalized_type in ["bar chart", "bar_chart"]:
+                            chart["type"] = "bar"
+                        elif normalized_type in ["pie chart", "pie_chart"]:
+                            chart["type"] = "pie"
+                        elif normalized_type in ["area chart", "area_chart"]:
+                            chart["type"] = "area"
+                        elif normalized_type in ["donut chart", "donut_chart"]:
+                            chart["type"] = "donut"
+                        elif normalized_type in ["gauge chart", "gauge_chart"]:
+                            chart["type"] = "gauge"
+                        # Keep original if already in correct format
+                        elif normalized_type in ["line", "bar", "pie", "area", "donut", "gauge", "table", "metric"]:
+                            chart["type"] = normalized_type
+                
+                # Handle different data field names - some models return 'data' instead of 'data_points'
+                if "data" in chart and "data_points" not in chart:
+                    chart["data_points"] = chart.pop("data")
+                
+                # Ensure data_points exists even if empty
+                if "data_points" not in chart:
+                    chart["data_points"] = []
+                
+                # Normalize data points
+                if "data_points" in chart and isinstance(chart["data_points"], list):
+                    for point in chart["data_points"]:
+                        # Ensure required fields exist
+                        if "label" not in point:
+                            point["label"] = point.get("name", point.get("category", "Unknown"))
+                        if "value" not in point:
+                            point["value"] = point.get("val", point.get("amount", 0))
+        
+        return data
+    
     async def extract_structured_data(
         self, 
         image: Image.Image, 
@@ -185,6 +232,9 @@ class StructuredOCRProvider(BaseOCRProvider):
                                         "model": model
                                     }
                                 
+                                # Normalize data before validation
+                                structured_data = self._normalize_dashboard_data(structured_data)
+                                
                                 # Validate against Pydantic model
                                 dashboard_data = DashboardData(**structured_data)
                                 return {
@@ -241,9 +291,15 @@ class StructuredOCRProvider(BaseOCRProvider):
     ) -> Dict[str, Any]:
         """Use LLM to assess quality of extracted JSON data"""
         
+        # Serialize data properly, handling enums and other non-JSON types
+        def json_serializer(obj):
+            if hasattr(obj, 'value'):  # Handle enums
+                return obj.value
+            return str(obj)
+        
         prompt = QUALITY_ASSESSMENT_PROMPT.format(
             image_description=image_description,
-            extracted_json=json.dumps(extracted_data, indent=2)
+            extracted_json=json.dumps(extracted_data, indent=2, default=json_serializer)
         )
         
         try:
