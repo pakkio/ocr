@@ -910,9 +910,16 @@ Both fighters performed equally well in this round.
                     
                     # Run AI Vision
                     ai_start = time.time()
-                    ai_structured = await ai_provider.extract_structured_data(image, ai_model)
-                    ai_quality = await ai_provider.assess_extraction_quality(ai_structured, f"Battle arena image")
+                    ai_structured_result = await ai_provider.extract_structured_data(image, ai_model)
                     ai_time = time.time() - ai_start
+                    
+                    # Check if AI extraction was successful
+                    if not ai_structured_result.get("success", False):
+                        error_msg = f"❌ AI extraction failed: {ai_structured_result.get('error', 'Unknown error')}"
+                        return error_msg, "", "", "", {}, {"error": ai_structured_result.get('error', 'Unknown error')}
+                    
+                    ai_structured = ai_structured_result.get("data", {})
+                    ai_quality = await ai_provider.assess_extraction_quality(ai_structured, f"Battle arena image")
                     
                     # Calculate battle scores
                     traditional_score = {
