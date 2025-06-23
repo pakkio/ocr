@@ -89,6 +89,17 @@ test = ["anyio[trio]", "blockbuster (>=1.5.23)", "coverage[toml] (>=7)", "except
 trio = ["trio (>=0.26.1)"]
 
 [[package]]
+name = "astor"
+version = "0.8.1"
+description = "Read/rewrite/write Python ASTs"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
+files = [
+    {file = "astor-0.8.1-py2.py3-none-any.whl", hash = "sha256:070a54e890cefb5b3739d19f30f5a5ec840ffc9c50ffa7d23cc9fc1a38ebbfc5"},
+    {file = "astor-0.8.1.tar.gz", hash = "sha256:6a6effda93f4e1ce9f618779b2dd1d9d84f1e32812c23a29b3fff6fd7f63fa5e"},
+]
+
+[[package]]
 name = "beautifulsoup4"
 version = "4.13.4"
 description = "Screen-scraping library"
@@ -461,6 +472,17 @@ files = [
     {file = "cython-3.1.2-cp39-cp39-win_amd64.whl", hash = "sha256:a965b81eb4f5a5f3f6760b162cb4de3907c71a9ba25d74de1ad7a0e4856f0412"},
     {file = "cython-3.1.2-py3-none-any.whl", hash = "sha256:d23fd7ffd7457205f08571a42b108a3cf993e83a59fe4d72b42e6fc592cf2639"},
     {file = "cython-3.1.2.tar.gz", hash = "sha256:6bbf7a953fa6762dfecdec015e3b054ba51c0121a45ad851fa130f63f5331381"},
+]
+
+[[package]]
+name = "decorator"
+version = "5.2.1"
+description = "Decorators for Humans"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "decorator-5.2.1-py3-none-any.whl", hash = "sha256:d316bb415a2d9e2d2b3abcc4084c6502fc09240e292cd76a76afc106a1c8e04a"},
+    {file = "decorator-5.2.1.tar.gz", hash = "sha256:65f266143752f734b0a7cc83c46f4618af75b8c5911b00ccb61d0ac9b6da0360"},
 ]
 
 [[package]]
@@ -2068,6 +2090,24 @@ numpy = [
 ]
 
 [[package]]
+name = "opt-einsum"
+version = "3.3.0"
+description = "Optimizing numpys einsum function"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "opt_einsum-3.3.0-py3-none-any.whl", hash = "sha256:2455e59e3947d3c275477df7f5205b30635e266fe6dc300e3d9f9646bfcea147"},
+    {file = "opt_einsum-3.3.0.tar.gz", hash = "sha256:59f6475f77bbc37dcf7cd748519c0ec60722e91e63ca114e68821c0c54a46549"},
+]
+
+[package.dependencies]
+numpy = ">=1.7"
+
+[package.extras]
+docs = ["numpydoc", "sphinx (==1.2.3)", "sphinx-rtd-theme", "sphinxcontrib-napoleon"]
+tests = ["pytest", "pytest-cov", "pytest-pep8"]
+
+[[package]]
 name = "orjson"
 version = "3.10.18"
 description = "Fast, correct Python JSON library supporting dataclasses, datetimes, and numpy"
@@ -2190,6 +2230,56 @@ requests = "*"
 scikit-image = "*"
 shapely = "*"
 tqdm = "*"
+
+[[package]]
+name = "paddlepaddle"
+version = "3.0.0"
+description = "Parallel Distributed Deep Learning"
+optional = false
+python-versions = "*"
+files = [
+    {file = "paddlepaddle-3.0.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:69321d2fed61f9c4b502843d213af0919e058f8399c3fb7da4b90ff9f9e8544d"},
+    {file = "paddlepaddle-3.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:7a8a3de6238d7588224353d7412d1869772fa88d0cc0119cb7c921bee9b1869c"},
+    {file = "paddlepaddle-3.0.0-cp310-cp310-manylinux1_x86_64.whl", hash = "sha256:73b1349d91a85dae81e23aee0faf1d04f244e26c688c23e387a504437066829a"},
+    {file = "paddlepaddle-3.0.0-cp310-cp310-manylinux2014_aarch64.whl", hash = "sha256:ea8841cdbea7f26dbe548d3b129dd9764f36a4338656c9b5257cac43b382a674"},
+    {file = "paddlepaddle-3.0.0-cp310-cp310-win_amd64.whl", hash = "sha256:9fe8544bce8d034da5cdab1417782c7d53e1bef97533bcef5710dfdb59e87ca5"},
+    {file = "paddlepaddle-3.0.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:f69b4ec5ec881e632bf80d8d2a0ca74f87925335dc57b14bb8971e72e2d87951"},
+    {file = "paddlepaddle-3.0.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:cb4a98192079cde5b5dac1109d334c12b376b97edc8682490b5f5065c8f708d9"},
+    {file = "paddlepaddle-3.0.0-cp311-cp311-manylinux1_x86_64.whl", hash = "sha256:cfd73da79e2eb9325bac4a3a1a7995063c7662dde724bf452659dda88e55b76f"},
+    {file = "paddlepaddle-3.0.0-cp311-cp311-manylinux2014_aarch64.whl", hash = "sha256:3ef99688f4d5113dcf0e026a0b225efa77975da04e8ca1d0666ebdb729d4a409"},
+    {file = "paddlepaddle-3.0.0-cp311-cp311-win_amd64.whl", hash = "sha256:215daf5c154855e9f4139844076853cabc86425fd127c390405895ae2b820d85"},
+    {file = "paddlepaddle-3.0.0-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:dcfebfb10deb15aa33d2a2d66d5a12d9de65461d8a40d2687e2fb3221150d0ba"},
+    {file = "paddlepaddle-3.0.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:8677e8d42ff66f74fbca32ff32d8b64bbe3d56ed29a92d43dc418f0f168fcb69"},
+    {file = "paddlepaddle-3.0.0-cp312-cp312-manylinux1_x86_64.whl", hash = "sha256:81a7c5b10150b07521d1cd1491dca1fb76ff621b14db10e899d959f3a77935ea"},
+    {file = "paddlepaddle-3.0.0-cp312-cp312-manylinux2014_aarch64.whl", hash = "sha256:ddaa996a8b0a00dbe4269da21d65052877ec3693a22ecc07b9cada3ecd116886"},
+    {file = "paddlepaddle-3.0.0-cp312-cp312-win_amd64.whl", hash = "sha256:68efccd9b64233243e48d89a20d34904e2827abc3458c7dddb9e97ef8e2209f6"},
+    {file = "paddlepaddle-3.0.0-cp313-cp313-macosx_10_9_x86_64.whl", hash = "sha256:52c401ffe4aae56316660a33015a6fd755cda23d3d70a28b13b73d70cbdbb8cb"},
+    {file = "paddlepaddle-3.0.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:9d1051f2e208da1d439daee7c861bcb50240f09712496eb61e9ce8c618faf2f9"},
+    {file = "paddlepaddle-3.0.0-cp313-cp313-manylinux1_x86_64.whl", hash = "sha256:8fc4865efd3656ee99424124792cb88a642151b4d591a7d6d4a5c6afdae95959"},
+    {file = "paddlepaddle-3.0.0-cp313-cp313-manylinux2014_aarch64.whl", hash = "sha256:bbc4d573b35d24a262e02d72696e80f5b4aee41f698671af9574deeb1a83e6f7"},
+    {file = "paddlepaddle-3.0.0-cp313-cp313-win_amd64.whl", hash = "sha256:2e1292d50f80a8577407008f7321f85c8309938c0c575927950aec3c45502c2a"},
+    {file = "paddlepaddle-3.0.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:5a98145ff8e554c6a85fe233ff5a6480def4b6b6390ee12436f028c819b4c36f"},
+    {file = "paddlepaddle-3.0.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:92d5398b7c6fd92d31b5cacb81dd1196c87a3bc7ee5021325df914c8187d03c2"},
+    {file = "paddlepaddle-3.0.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:414ae8b44259bc363f3e120ef917390f98a53bc57cc38de27d04f5f1e043aae1"},
+    {file = "paddlepaddle-3.0.0-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:157a3b11f0599175ea07759357d331be0031df3d462ba81b9c3c31fea9a57faf"},
+    {file = "paddlepaddle-3.0.0-cp38-cp38-win_amd64.whl", hash = "sha256:93a21b03a960515e1431bfe5f404060e2ce8c82c63d885600e0b45b775f2d081"},
+    {file = "paddlepaddle-3.0.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:394a942b7281a8eb87083f80a9592f31b8aec1a360464e536c1d955d3e6e0bb4"},
+    {file = "paddlepaddle-3.0.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:00bd606cdce5dbae2b9752afdc07479c5fab9df73efdf1bf577d187fd492f289"},
+    {file = "paddlepaddle-3.0.0-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:220f8010c30cfd7712d0b0364e4732a344779ac202888ae1045e3567e24a6213"},
+    {file = "paddlepaddle-3.0.0-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:f68630572edc4eb76ab6bbbe57689cb08b961f0d08bc0fc8c969d79b4bc213e9"},
+    {file = "paddlepaddle-3.0.0-cp39-cp39-win_amd64.whl", hash = "sha256:4b078cee4f6da995e4d2b1c46d1d94545f31a487b02ec1c61cfbb9e7d6d082f2"},
+]
+
+[package.dependencies]
+astor = "*"
+decorator = "*"
+httpx = "*"
+networkx = "*"
+numpy = ">=1.21"
+opt-einsum = "3.3.0"
+Pillow = "*"
+protobuf = ">=3.20.2"
+typing-extensions = "*"
 
 [[package]]
 name = "pandas"
@@ -2430,6 +2520,24 @@ files = [
 [package.extras]
 dev = ["pre-commit", "tox"]
 testing = ["coverage", "pytest", "pytest-benchmark"]
+
+[[package]]
+name = "protobuf"
+version = "6.31.1"
+description = ""
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "protobuf-6.31.1-cp310-abi3-win32.whl", hash = "sha256:7fa17d5a29c2e04b7d90e5e32388b8bfd0e7107cd8e616feef7ed3fa6bdab5c9"},
+    {file = "protobuf-6.31.1-cp310-abi3-win_amd64.whl", hash = "sha256:426f59d2964864a1a366254fa703b8632dcec0790d8862d30034d8245e1cd447"},
+    {file = "protobuf-6.31.1-cp39-abi3-macosx_10_9_universal2.whl", hash = "sha256:6f1227473dc43d44ed644425268eb7c2e488ae245d51c6866d19fe158e207402"},
+    {file = "protobuf-6.31.1-cp39-abi3-manylinux2014_aarch64.whl", hash = "sha256:a40fc12b84c154884d7d4c4ebd675d5b3b5283e155f324049ae396b95ddebc39"},
+    {file = "protobuf-6.31.1-cp39-abi3-manylinux2014_x86_64.whl", hash = "sha256:4ee898bf66f7a8b0bd21bce523814e6fbd8c6add948045ce958b73af7e8878c6"},
+    {file = "protobuf-6.31.1-cp39-cp39-win32.whl", hash = "sha256:0414e3aa5a5f3ff423828e1e6a6e907d6c65c1d5b7e6e975793d5590bdeecc16"},
+    {file = "protobuf-6.31.1-cp39-cp39-win_amd64.whl", hash = "sha256:8764cf4587791e7564051b35524b72844f845ad0bb011704c3736cce762d8fe9"},
+    {file = "protobuf-6.31.1-py3-none-any.whl", hash = "sha256:720a6c7e6b77288b85063569baae8536671b39f15cc22037ec7045658d80489e"},
+    {file = "protobuf-6.31.1.tar.gz", hash = "sha256:d8cac4c982f0b957a4dc73a80e2ea24fab08e679c0de9deb835f4a12d69aca9a"},
+]
 
 [[package]]
 name = "pyclipper"
@@ -4115,4 +4223,4 @@ legacy = ["openai"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "ad8ea909c7e79f3fffa3cb0e97c64469203fd97be52597d5c72051c8b8e07016"
+content-hash = "44b75e7a02262d50ddbf71ed2e88f859b7fa86914b28ccd8128a8a64089f6e98"
