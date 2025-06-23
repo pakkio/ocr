@@ -1,4 +1,5 @@
-from pydantic import BaseSettings, Field
+from pydantic import Field
+from pydantic_settings import BaseSettings
 from typing import Optional
 import os
 from dotenv import load_dotenv
@@ -21,6 +22,10 @@ class OCRConfig(BaseSettings):
     default_ocr_prompt: str = Field(
         default="Extract all text from this image. Return only the text content, preserving formatting and structure.",
         env="DEFAULT_OCR_PROMPT"
+    )
+    structured_ocr_prompt: str = Field(
+        default="Analyze this dashboard/analytics image and extract ALL visible data into structured JSON format. Focus on: numeric values, chart data points, time series data, key metrics, chart titles. Ignore watermarks and stock photo identifiers.",
+        env="STRUCTURED_OCR_PROMPT"
     )
     max_retries: int = Field(default=3, env="MAX_RETRIES")
     timeout_seconds: int = Field(default=30, env="TIMEOUT_SECONDS")

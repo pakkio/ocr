@@ -10,23 +10,28 @@ import plotly.graph_objects as go
 import os
 
 # Import our structured OCR modules
-from src.config import config
-from src.providers.structured_provider import StructuredOCRProvider
 from src.providers.traditional_provider import TraditionalOCRProvider
-from src.schemas import DashboardData, QualityAssessment
+# Temporarily disable structured provider to avoid Gradio/Pydantic schema conflicts
+STRUCTURED_AVAILABLE = False
+StructuredOCRProvider = None
+
+class SimpleConfig:
+    """Minimal config to avoid Pydantic issues"""
+    def __init__(self):
+        self.openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
 
 class GradioOCRBenchmark:
     """Modern Gradio interface for OCR benchmarking"""
     
     def __init__(self):
-        self.config = config
+        self.config = SimpleConfig()
         self.structured_provider = None
         self.traditional_provider = None
         
     def init_providers(self):
         """Initialize providers with error handling"""
         try:
-            if self.config.openrouter_api_key:
+            if STRUCTURED_AVAILABLE and self.config.openrouter_api_key and StructuredOCRProvider:
                 self.structured_provider = StructuredOCRProvider(self.config)
             self.traditional_provider = TraditionalOCRProvider(self.config)
             return True
@@ -464,9 +469,9 @@ def create_app():
 if __name__ == "__main__":
     app = create_app()
     app.launch(
-        server_name="0.0.0.0",
+        server_name="127.0.0.1",
         server_port=7860,
-        share=False,  # Set to True for public sharing
+        share=True,  # Enable public sharing for WSL compatibility
         show_error=True,
         debug=True
     )

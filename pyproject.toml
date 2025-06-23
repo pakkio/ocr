@@ -5,7 +5,7 @@ description = "App per testare e confrontare diversi OCR con AI"
 authors = ["Your Name <your.email@example.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 easyocr = "^1.7.0"
 paddleocr = "^2.7.3"
 pytesseract = "^0.3.10"
@@ -22,6 +22,7 @@ httpx = "^0.27.0"
 aiofiles = "^23.2.0"
 plotly = "^5.17.0"
 gradio = "^4.44.0"
+pydantic-settings = "^2.10.0"
 
 [build-system]
 requires = ["poetry-core"]

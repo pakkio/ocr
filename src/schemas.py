@@ -46,7 +46,6 @@ class TimeSeries(BaseModel):
     title: Optional[str] = Field(None, description="Chart title")
     series_name: Optional[str] = Field(None, description="Data series name")
     data: List[TimeSeriesData] = Field(description="Time series data points")
-    y_axis_range: Optional[Dict[str, float]] = Field(None, description="Y-axis min/max if visible")
 
 class DashboardData(BaseModel):
     """Complete dashboard data extraction"""
@@ -57,6 +56,7 @@ class DashboardData(BaseModel):
     text_content: List[str] = Field(default_factory=list, description="Other text content not in charts")
     watermarks: List[str] = Field(default_factory=list, description="Watermarks or credits to ignore")
     
+    
 class QualityAssessment(BaseModel):
     """LLM assessment of extraction quality"""
     completeness_score: float = Field(ge=0, le=10, description="How complete is the extraction (0-10)")
@@ -66,6 +66,7 @@ class QualityAssessment(BaseModel):
     potential_errors: List[str] = Field(default_factory=list, description="Potential extraction errors")
     confidence_level: str = Field(description="Overall confidence: high, medium, low")
     recommendations: List[str] = Field(default_factory=list, description="Recommendations for improvement")
+    
 
 # Prompt templates for structured extraction
 DASHBOARD_EXTRACTION_PROMPT = """
