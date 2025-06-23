@@ -99,8 +99,20 @@ class ComprehensiveTestSuite:
                 "google/gemini-2.5-pro",
                 "google/gemini-2.5-flash",
                 "google/gemini-2.5-flash-lite-preview-06-17",
-                "google/gemini-pro-1.5",
-                "google/gemini-flash-1.5"
+                "google/gemini-2.0-flash-exp",
+                "google/gemini-2.0-flash-thinking-exp",
+                "google/gemma-3-vision-preview"
+            ],
+            "Meta": [
+                "meta-llama/llama-3.2-11b-vision-instruct",
+                "meta-llama/llama-3.2-90b-vision-instruct"
+            ],
+            "Microsoft": [
+                "microsoft/phi-4-multimodal-instruct"
+            ],
+            "Mistral": [
+                "mistralai/pixtral-12b",
+                "mistralai/pixtral-large-2411"
             ]
         }
         

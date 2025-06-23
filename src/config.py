@@ -44,7 +44,7 @@ class OCRConfig(BaseSettings):
             "provider": "openai", 
             "cost_per_1k_tokens": 0.005,
             "supports_vision": True,
-            "supports_strict_json_schema": True
+            "supports_strict_json_schema": False
         },
         "openai/gpt-4o-mini": {
             "name": "GPT-4o Mini",
@@ -79,21 +79,21 @@ class OCRConfig(BaseSettings):
             "provider": "anthropic",
             "cost_per_1k_tokens": 0.003,
             "supports_vision": True,
-            "supports_strict_json_schema": True
+            "supports_strict_json_schema": False
         },
         "anthropic/claude-sonnet-4": {
             "name": "Claude Sonnet 4",
             "provider": "anthropic",
             "cost_per_1k_tokens": 0.003,
             "supports_vision": True,
-            "supports_strict_json_schema": True
+            "supports_strict_json_schema": False
         },
         "anthropic/claude-3.7-sonnet": {
             "name": "Claude 3.7 Sonnet",
             "provider": "anthropic",
             "cost_per_1k_tokens": 0.003,
             "supports_vision": True,
-            "supports_strict_json_schema": True
+            "supports_strict_json_schema": False
         },
         "anthropic/claude-3.5-haiku": {
             "name": "Claude 3.5 Haiku",
@@ -102,19 +102,19 @@ class OCRConfig(BaseSettings):
             "supports_vision": True,
             "supports_strict_json_schema": False
         },
-        "google/gemini-pro-1.5": {
-            "name": "Gemini Pro 1.5",
-            "provider": "google",
-            "cost_per_1k_tokens": 0.00125,
-            "supports_vision": True,
-            "supports_strict_json_schema": True
-        },
-        "google/gemini-flash-1.5": {
-            "name": "Gemini Flash 1.5",
+        "google/gemini-2.0-flash-exp": {
+            "name": "Gemini 2.0 Flash",
             "provider": "google",
             "cost_per_1k_tokens": 0.000075,
             "supports_vision": True,
-            "supports_strict_json_schema": True
+            "supports_strict_json_schema": False
+        },
+        "google/gemini-exp-1114": {
+            "name": "Gemini Experimental 1114",
+            "provider": "google",
+            "cost_per_1k_tokens": 0.000075,
+            "supports_vision": True,
+            "supports_strict_json_schema": False
         },
         "google/gemini-2.5-pro": {
             "name": "Gemini 2.5 Pro",
@@ -157,6 +157,73 @@ class OCRConfig(BaseSettings):
             "cost_per_1k_tokens": 0.0002,
             "supports_vision": True,
             "supports_strict_json_schema": False
+        },
+        "meta-llama/llama-3.2-11b-vision-instruct": {
+            "name": "Llama 3.2 11B Vision",
+            "provider": "meta",
+            "cost_per_1k_tokens": 0.00055,
+            "supports_vision": True,
+            "supports_strict_json_schema": False
+        },
+        "meta-llama/llama-3.2-90b-vision-instruct": {
+            "name": "Llama 3.2 90B Vision",
+            "provider": "meta", 
+            "cost_per_1k_tokens": 0.0018,
+            "supports_vision": True,
+            "supports_strict_json_schema": False
+        },
+        "microsoft/phi-4-multimodal-instruct": {
+            "name": "Phi-4 Multimodal",
+            "provider": "microsoft",
+            "cost_per_1k_tokens": 0.0004,
+            "supports_vision": True,
+            "supports_strict_json_schema": False
+        },
+        "mistralai/pixtral-large-2411": {
+            "name": "Pixtral Large",
+            "provider": "mistral",
+            "cost_per_1k_tokens": 0.002,
+            "supports_vision": True,
+            "supports_strict_json_schema": False
+        }
+    })
+    
+    # Model families for organized UI selection
+    model_families: dict = Field(default={
+        "OpenAI": {
+            "gpt-4o": "GPT-4o",
+            "openai/gpt-4o-mini": "GPT-4o Mini", 
+            "openai/gpt-4.1": "GPT-4.1",
+            "openai/gpt-4.1-mini": "GPT-4.1 Mini",
+            "openai/gpt-4.1-nano": "GPT-4.1 Nano"
+        },
+        "Anthropic": {
+            "anthropic/claude-3.5-sonnet": "Claude 3.5 Sonnet",
+            "anthropic/claude-sonnet-4": "Claude Sonnet 4", 
+            "anthropic/claude-3.7-sonnet": "Claude 3.7 Sonnet",
+            "anthropic/claude-3.5-haiku": "Claude 3.5 Haiku"
+        },
+        "Google": {
+            "google/gemini-2.5-pro": "Gemini 2.5 Pro",
+            "google/gemini-2.5-flash": "Gemini 2.5 Flash",
+            "google/gemini-2.5-flash-lite-preview-06-17": "Gemini 2.5 Flash Lite",
+            "google/gemini-2.0-flash-exp": "Gemini 2.0 Flash",
+            "google/gemini-exp-1114": "Gemini Experimental 1114"
+        },
+        "Meta": {
+            "meta-llama/llama-3.2-11b-vision-instruct": "Llama 3.2 11B Vision",
+            "meta-llama/llama-3.2-90b-vision-instruct": "Llama 3.2 90B Vision"
+        },
+        "Microsoft": {
+            "microsoft/phi-4-multimodal-instruct": "Phi-4 Multimodal"
+        },
+        "Mistral": {
+            "mistralai/pixtral-12b": "Pixtral 12B",
+            "mistralai/pixtral-large-2411": "Pixtral Large"
+        },
+        "Others": {
+            "qwen/qwen-2-vl-72b-instruct": "Qwen2-VL 72B",
+            "qwen/qwen-2-vl-7b-instruct": "Qwen2-VL 7B"
         }
     })
     

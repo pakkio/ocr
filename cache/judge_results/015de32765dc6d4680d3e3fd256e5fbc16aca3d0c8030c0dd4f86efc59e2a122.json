@@ -1,0 +1,26 @@
+{
+  "timestamp": "2025-06-23T20:07:23.520680",
+  "judgment": {
+    "winner": "result_b",
+    "confidence": 0.9,
+    "reasoning": "Result A is an empty JSON object, providing no extracted information whatsoever. Result B, while containing nulls and empty arrays, at least provides a structured schema for potential dashboard elements (dashboard_title, charts, metrics, time_series, text_content, watermarks). This schema, even if currently empty, is infinitely more useful than an entirely empty object. It sets up expectations for what kind of data *could* be extracted and provides a framework for future improvements or for a different image. An empty object gives no information or structure.",
+    "criteria_scores": {
+      "result_a": {
+        "accuracy": 0.0,
+        "completeness": 0.0,
+        "structure": 0.0,
+        "utility": 0.0
+      },
+      "result_b": {
+        "accuracy": 0.0,
+        "completeness": 0.0,
+        "structure": 5.0,
+        "utility": 2.0
+      }
+    },
+    "overall_scores": {
+      "result_a": 0.0,
+      "result_b": 2.5
+    }
+  }
+}

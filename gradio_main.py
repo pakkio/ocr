@@ -40,6 +40,57 @@ try:
 except ImportError:
     TESSERACT_AVAILABLE = False
 
+# --- Model Families Configuration ---
+MODEL_FAMILIES = {
+    "OpenAI": {
+        "gpt-4o": "GPT-4o",
+        "openai/gpt-4o-mini": "GPT-4o Mini", 
+        "openai/gpt-4.1": "GPT-4.1",
+        "openai/gpt-4.1-mini": "GPT-4.1 Mini",
+        "openai/gpt-4.1-nano": "GPT-4.1 Nano"
+    },
+    "Anthropic": {
+        "anthropic/claude-3.5-sonnet": "Claude 3.5 Sonnet",
+        "anthropic/claude-sonnet-4": "Claude Sonnet 4", 
+        "anthropic/claude-3.7-sonnet": "Claude 3.7 Sonnet",
+        "anthropic/claude-3.5-haiku": "Claude 3.5 Haiku"
+    },
+    "Google": {
+        "google/gemini-2.5-pro": "Gemini 2.5 Pro",
+        "google/gemini-2.5-flash": "Gemini 2.5 Flash",
+        "google/gemini-2.5-flash-lite-preview-06-17": "Gemini 2.5 Flash Lite",
+        "google/gemini-2.0-flash-exp": "Gemini 2.0 Flash",
+        "google/gemini-2.0-flash-thinking-exp": "Gemini 2.0 Flash Thinking",
+        "google/gemma-3-vision-preview": "Gemma 3 Vision"
+    },
+    "Meta": {
+        "meta-llama/llama-3.2-11b-vision-instruct": "Llama 3.2 11B Vision",
+        "meta-llama/llama-3.2-90b-vision-instruct": "Llama 3.2 90B Vision"
+    },
+    "Microsoft": {
+        "microsoft/phi-4-multimodal-instruct": "Phi-4 Multimodal"
+    },
+    "Mistral": {
+        "mistralai/pixtral-12b": "Pixtral 12B",
+        "mistralai/pixtral-large-2411": "Pixtral Large"
+    },
+    "Others": {
+        "qwen/qwen-2-vl-72b-instruct": "Qwen2-VL 72B",
+        "qwen/qwen-2-vl-7b-instruct": "Qwen2-VL 7B"
+    }
+}
+
+def get_models_for_family(family_name: str) -> List[str]:
+    """Get model IDs for a given family"""
+    return list(MODEL_FAMILIES.get(family_name, {}).keys())
+
+def get_all_models() -> List[str]:
+    """Get all available model IDs"""
+    all_models = []
+    for family_models in MODEL_FAMILIES.values():
+        all_models.extend(family_models.keys())
+    return all_models
+
 # --- Standalone Logic Classes (Pydantic-Free) ---
 
 class StandaloneJudgeLLM:
@@ -355,16 +406,30 @@ def create_app():
                         
                         with gr.Group():
                             gr.Markdown("### 🎯 Select Your Fighters")
-                            fighter_a = gr.Dropdown(
-                                choices=["gpt-4o", "anthropic/claude-3.5-sonnet", "google/gemini-2.5-flash", "google/gemini-pro-1.5", "openai/gpt-4o-mini"],
-                                value="gpt-4o",
-                                label="🥊 Fighter A"
-                            )
-                            fighter_b = gr.Dropdown(
-                                choices=["gpt-4o", "anthropic/claude-3.5-sonnet", "google/gemini-2.5-flash", "google/gemini-pro-1.5", "openai/gpt-4o-mini"],
-                                value="anthropic/claude-3.5-sonnet",
-                                label="🥊 Fighter B"
-                            )
+                            
+                            with gr.Row():
+                                family_a = gr.Dropdown(
+                                    choices=list(MODEL_FAMILIES.keys()),
+                                    value="OpenAI",
+                                    label="🏷️ Fighter A Family"
+                                )
+                                fighter_a = gr.Dropdown(
+                                    choices=get_models_for_family("OpenAI"),
+                                    value="gpt-4o",
+                                    label="🥊 Fighter A"
+                                )
+                            
+                            with gr.Row():
+                                family_b = gr.Dropdown(
+                                    choices=list(MODEL_FAMILIES.keys()),
+                                    value="Anthropic",
+                                    label="🏷️ Fighter B Family"
+                                )
+                                fighter_b = gr.Dropdown(
+                                    choices=get_models_for_family("Anthropic"),
+                                    value="anthropic/claude-3.5-sonnet",
+                                    label="🥊 Fighter B"
+                                )
                             fight_btn = gr.Button("⚔️ FIGHT!", variant="primary", size="lg")
                         
                         with gr.Group():
@@ -527,11 +592,18 @@ Both fighters performed equally well in this round.
                 with gr.Row():
                     with gr.Column(scale=1):
                         judge_image = gr.Image(type="pil", label="🖼️ Upload Dashboard")
-                        judge_models = gr.CheckboxGroup(
-                            choices=["gpt-4o", "anthropic/claude-3.5-sonnet", "google/gemini-2.5-flash", "google/gemini-pro-1.5", "openai/gpt-4o-mini"],
-                            value=["gpt-4o", "anthropic/claude-3.5-sonnet"],
-                            label="🤖 Select 2+ Models to Compare"
-                        )
+                        with gr.Group():
+                            gr.Markdown("### 🏷️ Select Model Families")
+                            family_selection = gr.CheckboxGroup(
+                                choices=list(MODEL_FAMILIES.keys()),
+                                value=["OpenAI", "Anthropic"],
+                                label="📁 Model Families"
+                            )
+                            judge_models = gr.CheckboxGroup(
+                                choices=get_all_models(),
+                                value=["gpt-4o", "anthropic/claude-3.5-sonnet"],
+                                label="🤖 Select 2+ Models to Compare"
+                            )
                         judge_run_btn = gr.Button("🥊 Run Judge Comparison", variant="primary")
                     with gr.Column(scale=2):
                         judge_summary = gr.Markdown(label="📊 Comparison Summary")
@@ -662,7 +734,18 @@ Both fighters performed equally well in this round.
                 with gr.Row():
                     with gr.Column(scale=1):
                         struct_image = gr.Image(type="pil", label="🖼️ Upload Dashboard")
-                        struct_models = gr.CheckboxGroup(choices=["gpt-4o", "openai/gpt-4o-mini", "openai/gpt-4.1", "openai/gpt-4.1-mini", "openai/gpt-4.1-nano", "anthropic/claude-3.5-sonnet", "anthropic/claude-sonnet-4", "anthropic/claude-3.7-sonnet", "google/gemini-2.5-pro", "google/gemini-2.5-flash", "google/gemini-2.5-flash-lite-preview-06-17", "google/gemini-pro-1.5", "google/gemini-flash-1.5"], value=["gpt-4o"], label="🤖 Select VLM Models")
+                        with gr.Group():
+                            gr.Markdown("### 🏷️ Select Model Families")
+                            struct_family_selection = gr.CheckboxGroup(
+                                choices=list(MODEL_FAMILIES.keys()),
+                                value=["OpenAI"],
+                                label="📁 Model Families"
+                            )
+                            struct_models = gr.CheckboxGroup(
+                                choices=get_all_models(),
+                                value=["gpt-4o"],
+                                label="🤖 Select VLM Models"
+                            )
                         struct_extract_btn = gr.Button("Extract Structured Data", variant="primary")
                     with gr.Column(scale=2):
                         struct_summary = gr.Markdown(label="📝 Summary")
@@ -711,6 +794,242 @@ Both fighters performed equally well in this round.
                     inputs=[trad_image, trad_models],
                     outputs=[trad_summary, trad_text, trad_raw]
                 )
+        
+        # Add family-model relationship callbacks
+        def update_fighter_a_models(family_name):
+            models = get_models_for_family(family_name)
+            return gr.Dropdown(choices=models, value=models[0] if models else None)
+        
+        def update_fighter_b_models(family_name):
+            models = get_models_for_family(family_name)
+            return gr.Dropdown(choices=models, value=models[0] if models else None)
+        
+        def update_judge_models(selected_families):
+            available_models = []
+            for family in selected_families:
+                available_models.extend(get_models_for_family(family))
+            return gr.CheckboxGroup(choices=available_models, value=available_models[:2] if len(available_models) >= 2 else available_models)
+        
+        def update_struct_models(selected_families):
+            available_models = []
+            for family in selected_families:
+                available_models.extend(get_models_for_family(family))
+            return gr.CheckboxGroup(choices=available_models, value=available_models[:1] if available_models else [])
+        
+        family_a.change(
+            fn=update_fighter_a_models,
+            inputs=[family_a],
+            outputs=[fighter_a]
+        )
+        
+        family_b.change(
+            fn=update_fighter_b_models,
+            inputs=[family_b],
+            outputs=[fighter_b]
+        )
+        
+        family_selection.change(
+            fn=update_judge_models,
+            inputs=[family_selection],
+            outputs=[judge_models]
+        )
+        
+        struct_family_selection.change(
+            fn=update_struct_models,
+            inputs=[struct_family_selection],
+            outputs=[struct_models]
+        )
+
+        with gr.Tab("⚔️ AI vs Traditional Battle"):
+            gr.Markdown("## 🥊 AI vs Traditional OCR Battle Arena")
+            gr.Markdown("Compare AI Vision Models against Traditional OCR engines in head-to-head combat!")
+            
+            with gr.Row():
+                with gr.Column(scale=1):
+                    battle_image = gr.Image(type="pil", label="🖼️ Battle Arena (Upload Dashboard)")
+                    
+                    with gr.Group():
+                        gr.Markdown("### 🤖 AI Fighter")
+                        ai_fighter = gr.Dropdown(
+                            choices=get_all_models(),
+                            value="google/gemini-2.5-flash",
+                            label="Select AI Model"
+                        )
+                        
+                    with gr.Group():
+                        gr.Markdown("### 🔧 Traditional OCR Fighter")
+                        traditional_fighter = gr.Dropdown(
+                            choices=["tesseract", "easyocr", "paddleocr"],
+                            value="tesseract",
+                            label="Select Traditional OCR"
+                        )
+                    
+                    battle_btn = gr.Button("🥊 START BATTLE!", variant="primary", size="lg")
+                
+                with gr.Column(scale=2):
+                    battle_status = gr.Markdown("### Ready for battle! Select fighters and upload an image.")
+                    
+                    with gr.Group():
+                        gr.Markdown("### 🏆 Battle Results")
+                        ai_score_display = gr.Markdown("")
+                        traditional_score_display = gr.Markdown("")
+                        battle_winner = gr.Markdown("")
+                    
+                    with gr.Group():
+                        gr.Markdown("### 📊 Detailed Analysis")
+                        battle_analysis = gr.Markdown("")
+            
+            with gr.Row():
+                with gr.Column():
+                    gr.Markdown("### 🤖 AI Fighter Results")
+                    ai_battle_results = gr.JSON(label="AI Extraction Results")
+                with gr.Column():
+                    gr.Markdown("### 🔧 Traditional Fighter Results")
+                    traditional_battle_results = gr.JSON(label="Traditional OCR Results")
+
+            async def run_ai_vs_traditional_battle(image, ai_model, traditional_model):
+                """Run a battle between AI and Traditional OCR"""
+                if not image:
+                    return "❌ Please upload an image first!", "", "", "", {}, {}
+                
+                battle_status = f"⚔️ **BATTLE IN PROGRESS**\n\n🤖 **{ai_model}** vs 🔧 **{traditional_model}**"
+                
+                try:
+                    # Import battle components
+                    from src.providers.traditional_provider import TraditionalOCRProvider
+                    from src.providers.structured_provider import StructuredOCRProvider
+                    from src.config import config
+                    
+                    traditional_provider = TraditionalOCRProvider(config)
+                    ai_provider = StructuredOCRProvider(config)
+                    
+                    # Run Traditional OCR
+                    traditional_start = time.time()
+                    traditional_result = await traditional_provider.extract_text(image, traditional_model)
+                    traditional_time = time.time() - traditional_start
+                    
+                    # Run AI Vision
+                    ai_start = time.time()
+                    ai_structured = await ai_provider.extract_structured_data(image, ai_model)
+                    ai_quality = await ai_provider.assess_extraction_quality(ai_structured, f"Battle arena image")
+                    ai_time = time.time() - ai_start
+                    
+                    # Calculate battle scores
+                    traditional_score = {
+                        'text_length': len(traditional_result.text) if traditional_result.text else 0,
+                        'speed': 1/max(traditional_time, 0.1),
+                        'confidence': traditional_result.confidence or 0,
+                        'success': not bool(traditional_result.error)
+                    }
+                    
+                    ai_score = {
+                        'charts_found': len(ai_structured.get('charts', [])),
+                        'metrics_found': len(ai_structured.get('metrics', [])),
+                        'completeness': ai_quality.get('completeness_score', 0),
+                        'accuracy': ai_quality.get('accuracy_score', 0),
+                        'structure': ai_quality.get('structure_score', 0)
+                    }
+                    
+                    # Scoring system (0-10 scale)
+                    traditional_total = min(10, (
+                        min(traditional_score['text_length'] / 50, 5) +  # Text extraction
+                        min(traditional_score['speed'] * 2, 3) +          # Speed bonus
+                        traditional_score['confidence'] * 2               # Confidence
+                    ))
+                    
+                    ai_total = (ai_score['completeness'] + ai_score['accuracy'] + ai_score['structure']) / 3
+                    
+                    # Determine winner
+                    if ai_total > traditional_total:
+                        winner = f"🥇 **AI VICTORY!** {ai_model} wins!"
+                        victory_margin = ai_total - traditional_total
+                    elif traditional_total > ai_total:
+                        winner = f"🥇 **TRADITIONAL OCR VICTORY!** {traditional_model} wins!"
+                        victory_margin = traditional_total - ai_total
+                    else:
+                        winner = "🤝 **IT'S A TIE!**"
+                        victory_margin = 0
+                    
+                    # Create score displays
+                    ai_display = f"""
+**🤖 AI Fighter: {ai_model}**
+- **Overall Score:** {ai_total:.1f}/10
+- **Charts Extracted:** {ai_score['charts_found']}
+- **Metrics Found:** {ai_score['metrics_found']}
+- **Completeness:** {ai_score['completeness']:.1f}/10
+- **Accuracy:** {ai_score['accuracy']:.1f}/10
+- **Structure:** {ai_score['structure']:.1f}/10
+- **Execution Time:** {ai_time:.2f}s
+"""
+                    
+                    traditional_display = f"""
+**🔧 Traditional Fighter: {traditional_model}**
+- **Overall Score:** {traditional_total:.1f}/10
+- **Text Extracted:** {traditional_score['text_length']} characters
+- **Speed Score:** {min(traditional_score['speed'] * 2, 3):.1f}/3
+- **Confidence:** {traditional_score['confidence']:.2f}
+- **Success:** {'✅' if traditional_score['success'] else '❌'}
+- **Execution Time:** {traditional_time:.2f}s
+"""
+                    
+                    analysis = f"""
+{winner}
+
+**Victory Margin:** {victory_margin:.1f} points
+
+**Battle Analysis:**
+- **Speed Champion:** {'🔧 Traditional' if traditional_time < ai_time else '🤖 AI'} 
+- **Data Understanding:** {'🤖 AI' if ai_total > 5 else '🔧 Traditional'}
+- **Raw Text:** {'🔧 Traditional' if traditional_score['text_length'] > 100 else '🤖 AI'}
+
+**Why {'AI' if ai_total > traditional_total else 'Traditional'} Won:**
+{'AI models excel at understanding context, structure, and extracting meaningful data from complex layouts.' if ai_total > traditional_total else 'Traditional OCR was faster and extracted more raw text content.'}
+"""
+                    
+                    # Prepare results for JSON display
+                    ai_results = {
+                        'model': ai_model,
+                        'structured_data': ai_structured,
+                        'quality_assessment': ai_quality,
+                        'execution_time': ai_time,
+                        'battle_score': ai_total
+                    }
+                    
+                    traditional_results = {
+                        'model': traditional_model,
+                        'text': traditional_result.text,
+                        'confidence': traditional_result.confidence,
+                        'execution_time': traditional_time,
+                        'error': traditional_result.error,
+                        'battle_score': traditional_total
+                    }
+                    
+                    return (
+                        f"✅ **BATTLE COMPLETE!**",
+                        ai_display,
+                        traditional_display,
+                        analysis,
+                        ai_results,
+                        traditional_results
+                    )
+                    
+                except Exception as e:
+                    return (
+                        f"❌ **BATTLE FAILED:** {str(e)}",
+                        "Error in AI fighter",
+                        "Error in Traditional fighter", 
+                        "Battle could not be completed",
+                        {},
+                        {}
+                    )
+
+            battle_btn.click(
+                fn=run_ai_vs_traditional_battle,
+                inputs=[battle_image, ai_fighter, traditional_fighter],
+                outputs=[battle_status, ai_score_display, traditional_score_display, 
+                        battle_analysis, ai_battle_results, traditional_battle_results]
+            )
+    
     return app
 
 if __name__ == "__main__":

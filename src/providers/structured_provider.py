@@ -66,18 +66,34 @@ class StructuredOCRProvider(BaseOCRProvider):
             # Get Pydantic schema for structured output
             schema = DashboardData.model_json_schema()
             
-            # Add additionalProperties: false for newer OpenAI models that require it
-            def add_additional_properties_false(obj):
+            # Fix schema for OpenAI strict mode compliance
+            def fix_schema_for_openai(obj):
                 if isinstance(obj, dict):
+                    # Add required fields if they don't exist and it's an object
                     if 'type' in obj and obj['type'] == 'object':
                         obj['additionalProperties'] = False
+                        if 'properties' in obj and 'required' not in obj:
+                            # For root schema, include ALL fields in required array per OpenAI strict mode
+                            if 'dashboard_title' in obj['properties']:
+                                obj['required'] = list(obj['properties'].keys())
+                            else:
+                                # For nested objects, make all non-optional fields required
+                                obj['required'] = [k for k, v in obj['properties'].items() 
+                                                  if not (isinstance(v, dict) and v.get('default') is not None)]
+                    
+                    # Recursively fix nested objects
                     for value in obj.values():
-                        add_additional_properties_false(value)
+                        if isinstance(value, (dict, list)):
+                            fix_schema_for_openai(value)
                 elif isinstance(obj, list):
                     for item in obj:
-                        add_additional_properties_false(item)
+                        fix_schema_for_openai(item)
             
-            add_additional_properties_false(schema)
+            fix_schema_for_openai(schema)
+            
+            # Ensure schema has title for OpenAI strict mode
+            if 'title' not in schema:
+                schema['title'] = 'DashboardData'
             
             # Prepare base request
             base_payload = {
