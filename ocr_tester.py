@@ -1,4 +1,19 @@
-# OCR Tester - Standalone Class (converted from Streamlit)
+"""
+OCR Tester - Standalone Class for Traditional OCR Comparison
+===========================================================
+
+Pure Python class for testing and comparing traditional OCR engines:
+- EasyOCR (Deep Learning based)
+- PaddleOCR (AI Advanced) 
+- Tesseract (Traditional)
+
+Usage:
+    tester = OCRTester()
+    results = tester.compare_all_ocr(image)
+    
+Note: UI functionality is available in gradio_main.py
+"""
+
 import easyocr
 import cv2
 import numpy as np
@@ -7,6 +22,7 @@ import time
 import pandas as pd
 import io
 import os
+from typing import Dict, Any, List, Optional
 
 try:
     from paddleocr import PaddleOCR
@@ -23,223 +39,260 @@ except ImportError:
     print("Warning: Tesseract not available - install with: poetry add pytesseract")
 
 class OCRTester:
+    """Standalone class for testing traditional OCR engines"""
+    
     def __init__(self):
         self.easyocr_reader = None
         self.paddle_ocr = None
         
     def get_easyocr_reader(self, languages=['en', 'it']):
+        """Initialize EasyOCR reader with caching"""
         if self.easyocr_reader is None:
-            self.easyocr_reader = easyocr.Reader(languages)
+            self.easyocr_reader = easyocr.Reader(languages, gpu=False)
         return self.easyocr_reader
     
-    def get_paddle_ocr(self, lang='en'):
-        if self.paddle_ocr is None and PADDLE_AVAILABLE:
-            self.paddle_ocr = PaddleOCR(use_angle_cls=True, lang=lang)
-        return self.paddle_ocr
-    
-    def preprocess_image(self, image):
-        """Converte immagine PIL in formato OpenCV"""
-        if isinstance(image, Image.Image):
-            return cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-        return image
-    
-    def test_easyocr(self, image):
-        """Test con EasyOCR"""
-        start_time = time.time()
-        
-        if self.easyocr_reader is None:
-            self.easyocr_reader = self.get_easyocr_reader()
-        
-        # EasyOCR accetta direttamente array numpy
-        if isinstance(image, Image.Image):
-            image_array = np.array(image)
-        else:
-            image_array = image
-            
-        results = self.easyocr_reader.readtext(image_array)
-        
-        execution_time = time.time() - start_time
-        
-        # Estrai solo il testo
-        text = '\n'.join([result[1] for result in results])
-        
-        return {
-            'text': text,
-            'time': execution_time,
-            'confidence': np.mean([result[2] for result in results]) if results else 0,
-            'details': results
-        }
-    
-    def test_paddleocr(self, image):
-        """Test con PaddleOCR"""
+    def get_paddle_ocr(self):
+        """Initialize PaddleOCR with caching"""
         if not PADDLE_AVAILABLE:
-            return {'text': 'PaddleOCR non disponibile', 'time': 0, 'confidence': 0}
-            
-        start_time = time.time()
-        
+            return None
         if self.paddle_ocr is None:
-            self.paddle_ocr = self.get_paddle_ocr()
-        
-        # Converti in formato OpenCV
-        cv_image = self.preprocess_image(image)
-        
-        results = self.paddle_ocr.ocr(cv_image, cls=True)
-        
-        execution_time = time.time() - start_time
-        
-        # Estrai testo e confidence
-        text_lines = []
-        confidences = []
-        
-        if results and results[0]:
-            for line in results[0]:
-                if line:
-                    text_lines.append(line[1][0])
-                    confidences.append(line[1][1])
-        
-        text = '\n'.join(text_lines)
-        avg_confidence = np.mean(confidences) if confidences else 0
-        
-        return {
-            'text': text,
-            'time': execution_time,
-            'confidence': avg_confidence,
-            'details': results
-        }
-    
-    def test_tesseract(self, image):
-        """Test con Tesseract"""
-        if not TESSERACT_AVAILABLE:
-            return {'text': 'Tesseract non disponibile', 'time': 0, 'confidence': 0}
+            self.paddle_ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
+        return self.paddle_ocr
+
+    def test_easyocr(self, image: Image.Image) -> Dict[str, Any]:
+        """Test EasyOCR on image"""
+        try:
+            start_time = time.time()
             
-        start_time = time.time()
+            # Convert PIL to numpy array
+            img_array = np.array(image.convert('RGB'))
+            
+            # Run EasyOCR
+            reader = self.get_easyocr_reader()
+            results = reader.readtext(img_array)
+            
+            # Extract text and confidence
+            texts = []
+            confidences = []
+            for (bbox, text, confidence) in results:
+                texts.append(text)
+                confidences.append(confidence)
+            
+            full_text = ' '.join(texts)
+            avg_confidence = np.mean(confidences) if confidences else 0.0
+            
+            end_time = time.time()
+            
+            return {
+                'success': True,
+                'text': full_text,
+                'confidence': avg_confidence,
+                'time': end_time - start_time,
+                'word_count': len(texts),
+                'char_count': len(full_text),
+                'error': None
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'text': '',
+                'confidence': 0.0,
+                'time': 0.0,
+                'word_count': 0,
+                'char_count': 0,
+                'error': str(e)
+            }
+
+    def test_paddleocr(self, image: Image.Image) -> Dict[str, Any]:
+        """Test PaddleOCR on image"""
+        if not PADDLE_AVAILABLE:
+            return {
+                'success': False,
+                'text': '',
+                'confidence': 0.0,
+                'time': 0.0,
+                'word_count': 0,
+                'char_count': 0,
+                'error': 'PaddleOCR not available'
+            }
+            
+        try:
+            start_time = time.time()
+            
+            # Convert PIL to numpy array
+            img_array = np.array(image.convert('RGB'))
+            
+            # Run PaddleOCR
+            ocr = self.get_paddle_ocr()
+            results = ocr.ocr(img_array, cls=True)
+            
+            # Extract text and confidence
+            texts = []
+            confidences = []
+            
+            if results and results[0]:
+                for line in results[0]:
+                    if line:
+                        text = line[1][0]
+                        confidence = line[1][1]
+                        texts.append(text)
+                        confidences.append(confidence)
+            
+            full_text = ' '.join(texts)
+            avg_confidence = np.mean(confidences) if confidences else 0.0
+            
+            end_time = time.time()
+            
+            return {
+                'success': True,
+                'text': full_text,
+                'confidence': avg_confidence,
+                'time': end_time - start_time,
+                'word_count': len(texts),
+                'char_count': len(full_text),
+                'error': None
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'text': '',
+                'confidence': 0.0,
+                'time': 0.0,
+                'word_count': 0,
+                'char_count': 0,
+                'error': str(e)
+            }
+
+    def test_tesseract(self, image: Image.Image) -> Dict[str, Any]:
+        """Test Tesseract OCR on image"""
+        if not TESSERACT_AVAILABLE:
+            return {
+                'success': False,
+                'text': '',
+                'confidence': 0.0,
+                'time': 0.0,
+                'word_count': 0,
+                'char_count': 0,
+                'error': 'Tesseract not available'
+            }
+            
+        try:
+            start_time = time.time()
+            
+            # Run Tesseract
+            text = pytesseract.image_to_string(image)
+            
+            # Tesseract doesn't provide confidence easily, so we estimate
+            words = text.split()
+            
+            end_time = time.time()
+            
+            return {
+                'success': True,
+                'text': text.strip(),
+                'confidence': 0.8 if len(words) > 0 else 0.0,  # Rough estimate
+                'time': end_time - start_time,
+                'word_count': len(words),
+                'char_count': len(text.strip()),
+                'error': None
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'text': '',
+                'confidence': 0.0,
+                'time': 0.0,
+                'word_count': 0,
+                'char_count': 0,
+                'error': str(e)
+            }
+
+    def compare_all_ocr(self, image: Image.Image, engines: Optional[List[str]] = None) -> Dict[str, Dict[str, Any]]:
+        """
+        Run comparison across all available OCR engines
         
-        # Tesseract lavora meglio con PIL Image
-        if not isinstance(image, Image.Image):
-            image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        Args:
+            image: PIL Image to process
+            engines: List of engines to test ['easyocr', 'paddleocr', 'tesseract']
+                    If None, tests all available engines
         
-        text = pytesseract.image_to_string(image, lang='eng+ita')
+        Returns:
+            Dictionary with results for each engine
+        """
+        if engines is None:
+            engines = ['easyocr', 'paddleocr', 'tesseract']
+            
+        results = {}
         
-        execution_time = time.time() - start_time
+        if 'easyocr' in engines:
+            results['EasyOCR'] = self.test_easyocr(image)
+            
+        if 'paddleocr' in engines and PADDLE_AVAILABLE:
+            results['PaddleOCR'] = self.test_paddleocr(image)
+            
+        if 'tesseract' in engines and TESSERACT_AVAILABLE:
+            results['Tesseract'] = self.test_tesseract(image)
+            
+        return results
+
+    def get_comparison_dataframe(self, results: Dict[str, Dict[str, Any]]) -> pd.DataFrame:
+        """Convert results to pandas DataFrame for analysis"""
+        comparison_data = []
+        
+        for engine_name, result in results.items():
+            comparison_data.append({
+                'Engine': engine_name,
+                'Success': '✅' if result['success'] else '❌',
+                'Time (s)': f"{result['time']:.3f}",
+                'Confidence': f"{result['confidence']:.2f}" if result['success'] else 'N/A',
+                'Words': result['word_count'],
+                'Characters': result['char_count'],
+                'Error': result['error'] if result['error'] else 'None'
+            })
+            
+        return pd.DataFrame(comparison_data)
+
+    def get_best_result(self, results: Dict[str, Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """Get the best OCR result based on confidence and text length"""
+        successful_results = {k: v for k, v in results.items() if v['success']}
+        
+        if not successful_results:
+            return None
+            
+        # Score based on confidence * text_length
+        best_engine = max(successful_results.keys(), 
+                         key=lambda k: successful_results[k]['confidence'] * successful_results[k]['char_count'])
         
         return {
-            'text': text.strip(),
-            'time': execution_time,
-            'confidence': 0.8,  # Tesseract non fornisce confidence facilmente
-            'details': None
+            'engine': best_engine,
+            **successful_results[best_engine]
         }
 
 def main():
-    st.set_page_config(
-        page_title="OCR Tester - Confronto AI vs Tradizionale",
-        page_icon="🔍",
-        layout="wide"
-    )
+    """Example usage of OCRTester"""
+    print("🔍 OCR Tester - Pure Python Traditional OCR Comparison")
+    print("=" * 60)
+    print("This is a standalone class for OCR testing.")
+    print("For interactive UI, use: python gradio_main.py")
+    print("=" * 60)
     
-    st.title("🔍 OCR Tester: EasyOCR vs PaddleOCR vs Tesseract")
-    st.markdown("**Confronto tra OCR moderni con AI e soluzioni tradizionali**")
+    # Example usage
+    tester = OCRTester()
     
-    ocr_tester = OCRTester()
-    
-    # Sidebar per configurazioni
-    st.sidebar.header("⚙️ Configurazioni")
-    
-    # Upload file
-    uploaded_file = st.sidebar.file_uploader(
-        "Carica un'immagine",
-        type=['png', 'jpg', 'jpeg', 'bmp', 'tiff'],
-        help="Formati supportati: PNG, JPG, JPEG, BMP, TIFF"
-    )
-    
-    # Selezione OCR da testare
-    st.sidebar.subheader("OCR da testare:")
-    test_easyocr = st.sidebar.checkbox("EasyOCR (Deep Learning)", value=True)
-    test_paddleocr = st.sidebar.checkbox("PaddleOCR (AI Avanzato)", value=True)
-    test_tesseract = st.sidebar.checkbox("Tesseract (Tradizionale)", value=True)
-    
-    if uploaded_file is not None:
-        # Mostra immagine
-        image = Image.open(uploaded_file)
-        
-        col1, col2 = st.columns([1, 2])
-        
-        with col1:
-            st.subheader("📷 Immagine Originale")
-            st.image(image, caption="Immagine da analizzare", use_column_width=True)
-            
-            st.info(f"**Dimensioni:** {image.size[0]}x{image.size[1]} px")
-        
-        with col2:
-            st.subheader("🚀 Risultati OCR")
-            
-            if st.button("▶️ Avvia Test OCR", type="primary"):
-                results = {}
-                
-                # Test EasyOCR
-                if test_easyocr:
-                    with st.spinner("🔄 Testando EasyOCR..."):
-                        results['EasyOCR'] = ocr_tester.test_easyocr(image)
-                
-                # Test PaddleOCR  
-                if test_paddleocr:
-                    with st.spinner("🔄 Testando PaddleOCR..."):
-                        results['PaddleOCR'] = ocr_tester.test_paddleocr(image)
-                
-                # Test Tesseract
-                if test_tesseract:
-                    with st.spinner("🔄 Testando Tesseract..."):
-                        results['Tesseract'] = ocr_tester.test_tesseract(image)
-                
-                # Mostra risultati
-                if results:
-                    st.success("✅ Test completati!")
-                    
-                    # Tabella comparativa
-                    st.subheader("📊 Confronto Prestazioni")
-                    
-                    comparison_data = []
-                    for ocr_name, result in results.items():
-                        comparison_data.append({
-                            'OCR': ocr_name,
-                            'Tempo (s)': f"{result['time']:.3f}",
-                            'Confidence': f"{result['confidence']:.2%}",
-                            'Caratteri': len(result['text'])
-                        })
-                    
-                    df = pd.DataFrame(comparison_data)
-                    st.dataframe(df, use_container_width=True)
-                    
-                    # Risultati dettagliati
-                    st.subheader("📝 Testi Estratti")
-                    
-                    for ocr_name, result in results.items():
-                        with st.expander(f"🔍 {ocr_name} (Tempo: {result['time']:.3f}s)"):
-                            if result['text']:
-                                st.text_area(
-                                    f"Testo estratto da {ocr_name}:",
-                                    result['text'],
-                                    height=150,
-                                    key=f"text_{ocr_name}"
-                                )
-                            else:
-                                st.warning("Nessun testo rilevato")
-    
-    else:
-        st.info("👆 Carica un'immagine dalla sidebar per iniziare il test")
-        
-        # Esempio di utilizzo
-        st.subheader("💡 Come usare l'app")
-        st.markdown("""
-        1. **Carica un'immagine** dalla sidebar (formati: PNG, JPG, JPEG, BMP, TIFF)
-        2. **Seleziona gli OCR** che vuoi testare
-        3. **Clicca su "Avvia Test OCR"** per confrontare le prestazioni
-        4. **Analizza i risultati** nella tabella comparativa e nei dettagli
-        
-        ### 🎯 OCR Disponibili:
-        - **EasyOCR**: Veloce e semplice, buono per uso generale
-        - **PaddleOCR**: Più accurato, migliore per documenti complessi  
-        - **Tesseract**: Il veterano, riferimento storico per confronti
-        """)
+    print(f"Available engines:")
+    print(f"  - EasyOCR: ✅ Available")
+    print(f"  - PaddleOCR: {'✅ Available' if PADDLE_AVAILABLE else '❌ Not installed'}")
+    print(f"  - Tesseract: {'✅ Available' if TESSERACT_AVAILABLE else '❌ Not installed'}")
+    print()
+    print("To test with an image:")
+    print("  from PIL import Image")
+    print("  image = Image.open('your_image.jpg')")
+    print("  results = tester.compare_all_ocr(image)")
+    print("  df = tester.get_comparison_dataframe(results)")
+    print("  print(df)")
 
 if __name__ == "__main__":
     main()

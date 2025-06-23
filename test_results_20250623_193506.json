@@ -1,0 +1,137 @@
+{
+  "timestamp": "2025-06-23T19:35:06.962164",
+  "total_tests": 10,
+  "successful_tests": 8,
+  "failed_tests": 2,
+  "total_execution_time": 89.45845770835876,
+  "models_tested": [
+    "openai/gpt-4o-mini",
+    "invalid/nonexistent-model",
+    "easyocr",
+    "gpt-4o",
+    "anthropic/claude-3.5-sonnet",
+    "google/gemini-2.5-flash"
+  ],
+  "test_results": [
+    {
+      "model_name": "gpt-4o",
+      "test_type": "structured_extraction",
+      "success": false,
+      "execution_time": 10.651707410812378,
+      "error_message": "API Error 400: {\"error\":{\"message\":\"Provider returned error\",\"code\":400,\"metadata\":{\"raw\":\"{\\\"error\\\":{\\\"message\\\":\\\"Invalid schema for response_format 'dashboard_extraction': In context=(), 'required' is required to be supplied and to be an array including every key in properties. Missing 'title'.\\\",\\\"type\\\":\\\"invalid_request_error\\\",\\\"param\\\":\\\"response_format\\\",\\\"code\\\":null}}\",\"provider_name\":\"Azure\"}},\"user_id\":\"user_2lvrCkCkHOWCDdJ4SDFP9SbM6ei\"}",
+      "data_extracted": false,
+      "charts_count": 0,
+      "metrics_count": 0,
+      "confidence": 0.0,
+      "json_schema_mode": "unknown"
+    },
+    {
+      "model_name": "openai/gpt-4o-mini",
+      "test_type": "structured_extraction",
+      "success": true,
+      "execution_time": 6.540667295455933,
+      "error_message": null,
+      "data_extracted": true,
+      "charts_count": 0,
+      "metrics_count": 0,
+      "confidence": 0.0,
+      "json_schema_mode": "fallback"
+    },
+    {
+      "model_name": "anthropic/claude-3.5-sonnet",
+      "test_type": "structured_extraction",
+      "success": true,
+      "execution_time": 14.819831132888794,
+      "error_message": null,
+      "data_extracted": true,
+      "charts_count": 0,
+      "metrics_count": 0,
+      "confidence": 0.0,
+      "json_schema_mode": "strict"
+    },
+    {
+      "model_name": "google/gemini-2.5-flash",
+      "test_type": "structured_extraction",
+      "success": false,
+      "execution_time": 8.814144372940063,
+      "error_message": "Schema validation error: 8 validation errors for DashboardData\ncharts.0.type\n  Input should be 'line', 'bar', 'pie', 'area', 'donut', 'gauge', 'table' or 'metric' [type=enum, input_value='Line Chart', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.10/v/enum\ncharts.0.data_points\n  Field required [type=missing, input_value={'type': 'Line Chart', 't... 2021, 'value': 100}]}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing\ncharts.1.type\n  Input should be 'line', 'bar', 'pie', 'area', 'donut', 'gauge', 'table' or 'metric' [type=enum, input_value='Pie Chart', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.10/v/enum\ncharts.1.data_points\n  Field required [type=missing, input_value={'type': 'Pie Chart', 'ti...': '25%', 'value': 25}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing\ncharts.2.type\n  Input should be 'line', 'bar', 'pie', 'area', 'donut', 'gauge', 'table' or 'metric' [type=enum, input_value='Area Chart', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.10/v/enum\ncharts.2.data_points\n  Field required [type=missing, input_value={'type': 'Area Chart', 't...h two distinct layers.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing\ncharts.3.type\n  Input should be 'line', 'bar', 'pie', 'area', 'donut', 'gauge', 'table' or 'metric' [type=enum, input_value='Bar Chart', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.10/v/enum\ncharts.3.data_points\n  Field required [type=missing, input_value={'type': 'Bar Chart', 'de...ues for each category.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.10/v/missing",
+      "data_extracted": false,
+      "charts_count": 0,
+      "metrics_count": 0,
+      "confidence": 0.0,
+      "json_schema_mode": "unknown"
+    },
+    {
+      "model_name": "gpt-4o",
+      "test_type": "gradio_extraction",
+      "success": true,
+      "execution_time": 14.882845640182495,
+      "error_message": null,
+      "data_extracted": true,
+      "charts_count": 4,
+      "metrics_count": 2,
+      "confidence": 0.0,
+      "json_schema_mode": "json_object"
+    },
+    {
+      "model_name": "openai/gpt-4o-mini",
+      "test_type": "gradio_extraction",
+      "success": true,
+      "execution_time": 5.73157000541687,
+      "error_message": null,
+      "data_extracted": true,
+      "charts_count": 3,
+      "metrics_count": 2,
+      "confidence": 0.0,
+      "json_schema_mode": "json_object"
+    },
+    {
+      "model_name": "anthropic/claude-3.5-sonnet",
+      "test_type": "gradio_extraction",
+      "success": true,
+      "execution_time": 11.933665752410889,
+      "error_message": null,
+      "data_extracted": true,
+      "charts_count": 5,
+      "metrics_count": 2,
+      "confidence": 0.0,
+      "json_schema_mode": "json_object"
+    },
+    {
+      "model_name": "google/gemini-2.5-flash",
+      "test_type": "gradio_extraction",
+      "success": true,
+      "execution_time": 7.4917662143707275,
+      "error_message": null,
+      "data_extracted": true,
+      "charts_count": 6,
+      "metrics_count": 2,
+      "confidence": 0.0,
+      "json_schema_mode": "json_object"
+    },
+    {
+      "model_name": "easyocr",
+      "test_type": "traditional_ocr",
+      "success": true,
+      "execution_time": 0.6216914653778076,
+      "error_message": null,
+      "data_extracted": true,
+      "charts_count": 0,
+      "metrics_count": 0,
+      "confidence": 0.8716275883353208,
+      "json_schema_mode": "text_only"
+    },
+    {
+      "model_name": "invalid/nonexistent-model",
+      "test_type": "error_handling",
+      "success": true,
+      "execution_time": 3.461867570877075,
+      "error_message": "API Error 400: {\"error\":{\"message\":\"invalid/nonexistent-model is not a valid model ID\",\"code\":400},\"user_id\":\"user_2lvrCkCkHOWCDdJ4SDFP9SbM6ei\"}",
+      "data_extracted": false,
+      "charts_count": 0,
+      "metrics_count": 0,
+      "confidence": 0.0,
+      "json_schema_mode": "unknown"
+    }
+  ]
+}
