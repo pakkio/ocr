@@ -40,45 +40,11 @@ try:
 except ImportError:
     TESSERACT_AVAILABLE = False
 
-# --- Model Families Configuration ---
-MODEL_FAMILIES = {
-    "OpenAI": {
-        "gpt-4o": "GPT-4o",
-        "openai/gpt-4o-mini": "GPT-4o Mini", 
-        "openai/gpt-4.1": "GPT-4.1",
-        "openai/gpt-4.1-mini": "GPT-4.1 Mini",
-        "openai/gpt-4.1-nano": "GPT-4.1 Nano"
-    },
-    "Anthropic": {
-        "anthropic/claude-3.5-sonnet": "Claude 3.5 Sonnet",
-        "anthropic/claude-sonnet-4": "Claude Sonnet 4", 
-        "anthropic/claude-3.7-sonnet": "Claude 3.7 Sonnet",
-        "anthropic/claude-3.5-haiku": "Claude 3.5 Haiku"
-    },
-    "Google": {
-        "google/gemini-2.5-pro": "Gemini 2.5 Pro",
-        "google/gemini-2.5-flash": "Gemini 2.5 Flash",
-        "google/gemini-2.5-flash-lite-preview-06-17": "Gemini 2.5 Flash Lite",
-        "google/gemini-2.0-flash-exp": "Gemini 2.0 Flash",
-        "google/gemini-2.0-flash-thinking-exp": "Gemini 2.0 Flash Thinking",
-        "google/gemma-3-vision-preview": "Gemma 3 Vision"
-    },
-    "Meta": {
-        "meta-llama/llama-3.2-11b-vision-instruct": "Llama 3.2 11B Vision",
-        "meta-llama/llama-3.2-90b-vision-instruct": "Llama 3.2 90B Vision"
-    },
-    "Microsoft": {
-        "microsoft/phi-4-multimodal-instruct": "Phi-4 Multimodal"
-    },
-    "Mistral": {
-        "mistralai/pixtral-12b": "Pixtral 12B",
-        "mistralai/pixtral-large-2411": "Pixtral Large"
-    },
-    "Others": {
-        "qwen/qwen-2-vl-72b-instruct": "Qwen2-VL 72B",
-        "qwen/qwen-2-vl-7b-instruct": "Qwen2-VL 7B"
-    }
-}
+# Import centralized configuration
+from src.config import config
+
+# Use centralized model families from config
+MODEL_FAMILIES = config.model_families
 
 def get_models_for_family(family_name: str) -> List[str]:
     """Get model IDs for a given family"""
@@ -258,34 +224,49 @@ class StandaloneStructuredOCR:
             response.raise_for_status()
             return response.json()
 
+    # THIS IS THE FINAL, MOST ROBUST VERSION OF THE METHOD
     async def extract(self, image: Image.Image, model: str) -> Dict[str, Any]:
         if not self.api_key: return {"success": False, "error": "OPENROUTER_API_KEY not set."}
-        prompt = (
-            "Analyze the dashboard image and extract all visible data. Your output MUST be a single, valid JSON object "
-            f"that conforms to this structure: \n```json\n{self.schema_prompt}\n```"
-        )
+        
+        # We continue to use the robust prompt from src/schemas.py
+        from src.schemas import DASHBOARD_EXTRACTION_PROMPT
+        prompt = DASHBOARD_EXTRACTION_PROMPT.replace("```", "```")
+
         payload = {
             "model": model,
             "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}, {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{self.image_to_base64(image)}"}}] }],
-            "response_format": {"type": "json_object"}
+            # The "Belt": Keep this best-practice parameter
+            "response_format": {"type": "json_object"},
+            "max_tokens": 4096 
         }
+        
         try:
             response_data = await self._make_api_call(payload)
-            content = response_data['choices'][0]['message']['content']
+            content = response_data['choices']['message']['content']
             
-            # Remove markdown code blocks if present
+            # The "Suspenders": Add back robust stripping for non-compliant models
             json_content = content.strip()
-            if json_content.startswith('```json'):
-                json_content = json_content[7:]  # Remove ```json
+            if json_content.startswith('```-json'):
+                json_content = json_content[8:] # Remove ```-json and the newline
             if json_content.startswith('```'):
-                json_content = json_content[3:]   # Remove ```
+                json_content = json_content[3:]
             if json_content.endswith('```'):
-                json_content = json_content[:-3]  # Remove trailing ```
+                json_content = json_content[:-3]
             json_content = json_content.strip()
             
+            # Now, attempt to parse the cleaned content
             return {"success": True, "data": json.loads(json_content)}
+            
+        except json.JSONDecodeError as e:
+            # This gives us a much better error message if parsing still fails
+            print(f"--- JSON PARSE FAILED FOR MODEL: {model} ---")
+            print(f"--- ORIGINAL CONTENT ---\n{content}\n--------------------------")
+            return {"success": False, "error": f"JSON parsing failed: {str(e)}"}
         except Exception as e:
+            # This catches other errors like network issues or invalid API keys.
             return {"success": False, "error": f"API call for {model} failed: {str(e)}"}
+    
+   
 
     async def assess(self, extracted_data: Dict, model: str = "anthropic/claude-3.5-haiku") -> Dict[str, Any]:
         prompt = (
@@ -818,6 +799,10 @@ Both fighters performed equally well in this round.
                 available_models.extend(get_models_for_family(family))
             return gr.CheckboxGroup(choices=available_models, value=available_models[:1] if available_models else [])
         
+        def update_ai_fighter_models(family_name):
+            models = get_models_for_family(family_name)
+            return gr.Dropdown(choices=models, value=models[0] if models else None)
+        
         family_a.change(
             fn=update_fighter_a_models,
             inputs=[family_a],
@@ -852,11 +837,17 @@ Both fighters performed equally well in this round.
                     
                     with gr.Group():
                         gr.Markdown("### 🤖 AI Fighter")
-                        ai_fighter = gr.Dropdown(
-                            choices=get_all_models(),
-                            value="google/gemini-2.5-flash",
-                            label="Select AI Model"
-                        )
+                        with gr.Row():
+                            ai_family = gr.Dropdown(
+                                choices=list(MODEL_FAMILIES.keys()),
+                                value="Google",
+                                label="🏷️ AI Family"
+                            )
+                            ai_fighter = gr.Dropdown(
+                                choices=get_models_for_family("Google"),
+                                value="google/gemini-2.5-flash",
+                                label="🤖 AI Model"
+                            )
                         
                     with gr.Group():
                         gr.Markdown("### 🔧 Traditional OCR Fighter")
@@ -1048,6 +1039,13 @@ Both fighters performed equally well in this round.
                 outputs=[battle_status, ai_score_display, traditional_score_display, 
                         battle_analysis, ai_battle_results, traditional_battle_results]
             )
+        
+        # Add callback for AI family selection in battle tab
+        ai_family.change(
+            fn=update_ai_fighter_models,
+            inputs=[ai_family],
+            outputs=[ai_fighter]
+        )
     
     return app
 

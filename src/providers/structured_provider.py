@@ -113,12 +113,13 @@ class StructuredOCRProvider(BaseOCRProvider):
             # Get Pydantic schema for structured output
             schema = DashboardData.model_json_schema()
             
-            # Fix schema for OpenAI strict mode compliance
+            # Fix schema for OpenAI strict mode compliance - only for models that support it
             def fix_schema_for_openai(obj):
                 if isinstance(obj, dict):
                     # Add required fields if they don't exist and it's an object
-                    if 'type' in obj and obj['type'] == 'object':
-                        obj['additionalProperties'] = False
+                    if 'type' in obj and obj['type'] == 'object' and supports_strict_schema:
+                        # Skip additionalProperties to avoid Gradio compatibility issues
+                        pass  # obj['additionalProperties'] = False
                         if 'properties' in obj and 'required' not in obj:
                             # For root schema, include ALL fields in required array per OpenAI strict mode
                             if 'dashboard_title' in obj['properties']:
@@ -352,18 +353,20 @@ class StructuredOCRProvider(BaseOCRProvider):
             # Get assessment schema
             schema = QualityAssessment.model_json_schema()
             
-            # Add additionalProperties: false for newer OpenAI models that require it
-            def add_additional_properties_false(obj):
-                if isinstance(obj, dict):
-                    if 'type' in obj and obj['type'] == 'object':
-                        obj['additionalProperties'] = False
-                    for value in obj.values():
-                        add_additional_properties_false(value)
-                elif isinstance(obj, list):
-                    for item in obj:
-                        add_additional_properties_false(item)
-            
-            add_additional_properties_false(schema)
+            # Only add additionalProperties: false for models that support strict mode
+            if supports_strict_schema:
+                def add_additional_properties_false(obj):
+                    if isinstance(obj, dict):
+                        if 'type' in obj and obj['type'] == 'object':
+                            # Skip additionalProperties to avoid Gradio compatibility issues
+                            pass  # obj['additionalProperties'] = False
+                        for value in obj.values():
+                            add_additional_properties_false(value)
+                    elif isinstance(obj, list):
+                        for item in obj:
+                            add_additional_properties_false(item)
+                
+                add_additional_properties_false(schema)
             
             base_payload = {
                 "model": model,

@@ -69,6 +69,7 @@ class AIvsTraditionalBattle:
         
         # Battle configuration
         self.traditional_models = ["tesseract", "easyocr", "paddleocr"]
+        # Use a subset of available AI models for battles (fast, representative models)
         self.ai_models = [
             "google/gemini-2.5-flash",  # Fast and cheap
             "anthropic/claude-3.5-sonnet",  # Excellent reasoning

@@ -4,6 +4,8 @@ from typing import Optional
 import os
 from dotenv import load_dotenv
 
+
+print(f"Attempting to load .env from current working directory: {os.getcwd()}") 
 load_dotenv()
 
 class OCRConfig(BaseSettings):
